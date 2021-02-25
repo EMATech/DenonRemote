@@ -1,0 +1,2 @@
+# Twisted doesn't support python 3.9 yet
+python <= 3.8
