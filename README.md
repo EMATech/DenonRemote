@@ -7,6 +7,10 @@ License: [GPLv3+](LICENSE)
 
 Language: [Python](https://python.org) 3
 
+Dependencies:
+
+- [Unicode Power Symbol](https://unicodepowersymbol.com/) Copyright (c) 2013 Joe Loughry licensed under MIT
+
 ### Features
 
 #### Target hardware
@@ -74,12 +78,11 @@ Language: [Python](https://python.org) 3
 
 ##### Windows executable
 
-- [ ] Find a way to make it resident in the task bar with a nice icon, like soundcard control panel
+- [x] Find a way to make it resident in the task bar with a nice icon, like soundcard control panel
     - [x] [RBTray](https://sourceforge.net/projects/rbtray/files/latest/download)
-    - [x] [MinimizeToTray](https://github.com/sandwichdoge/MinimizeToTray/releases/latest)
     - [ ] The Pythonic Way
 - [ ] Handle shutdown to power off the device
-- [ ] PyInstaller
+- [y] PyInstaller
 - [ ] VST plugin? (Not required if MIDI input is implemented but would be neat to have in the monitoring section of a
   DAW)
     - [ ] See [PyVST](https://pypi.org/project/pyvst/)

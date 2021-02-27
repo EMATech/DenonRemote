@@ -78,25 +78,48 @@ MASTER_VOLUME_LEN = 2
 MASTER_VOLUME_ZERODB_REF = 80
 
 
-def compute_master_volume_label(value):
+def compute_master_volume_label(value, zerodb_ref=MASTER_VOLUME_ZERODB_REF):
     """Convert Master Volume ASCII value to dB"""
     # TODO: Handle absolute values
-    label = ''
+    label = '---.-dB'
     if int(value[:2]) < MASTER_VOLUME_MIN or int(value[:2]) > MASTER_VOLUME_MAX:
         logger.error("Master volume value %s out of bounds (%s-%s)", value, MASTER_VOLUME_MIN, MASTER_VOLUME_MAX)
     # Quirks
     if value == '99':
-        label = "-∞dB"
+        result = "-∞dB"
     elif value == '995':
-        label = "-80.5dB"
-    else:
+        result = "-80.5dB"
+    elif len(value) == 2:
         # General case
+        result = str(float(value) - zerodb_ref)
+    elif len(value) == 3:
+        # Handle undocumented special case for half dB
+
+        # Hardcode values around 0 because of computing sign uncertainty
         # FIXME: test '985' which seems invalid
-        if len(value) == 2:
-            label = str(float(value) - MASTER_VOLUME_ZERODB_REF) + "dB"
-        if len(value) == 3:
-            # Handle undocumented special case for half dB
-            label = str(int(value[:2]) - MASTER_VOLUME_ZERODB_REF) + ".5" + "dB"
+        if value == str((zerodb_ref - 1)) + '5':
+            result = "-0.5"
+        elif value == str(zerodb_ref) + '5':
+            result = "0.5"
+        else:
+            value = int(value[:2])  # Drop the third digit
+            offset = 0
+            if value < zerodb_ref:
+                offset = 1
+            logger.debug("Add offset %i to dB calculation with value %i5", offset, value)
+            result = str(int(value + offset - zerodb_ref)) + ".5"
+    else:
+        raise ValueError
+
+    # Format label with fixed width like the actual display:
+    # [ NEG SIGN or EMPTY ] [ DIGIT er EMPTY ] [ DIGIT ] [ DOT ] [ DIGIT ] [ d ] [ B ]
+    label = "%s%s%s.%sdB" % (
+        result[0] if result[0] == '-' else " ",
+        " " if len(result) <= 3 or result[-4] == '-' else result[-4],
+        result[-3],
+        result[-1])
+
+    logger.debug(label)
     return label
 
 
@@ -734,7 +757,7 @@ class DN500AVMessages():
             self.logger.error("Command unknown: %s", status_command)
             return
         else:
-            self.logger.info("Found command %s: %s", self.command_code, self.command_label)
+            self.logger.info("Parsed command %s: %s", self.command_code, self.command_label)
 
         # Trim command from status command stream
         status_command = status_command[len(self.command_code):]
@@ -757,7 +780,7 @@ class DN500AVMessages():
                 self.logger.debug("Subcommand unknown. Probably a parameter: %s", status_command)
                 self.subcommand_code = None
             else:
-                self.logger.info("Found subcommand %s: %s", self.subcommand_code, self.subcommand_label)
+                self.logger.info("Parsed subcommand %s: %s", self.subcommand_code, self.subcommand_label)
                 # Trim subcommand from status command stream
                 status_command = status_command[
                                  len(self.subcommand_code) + 1:]  # Subcommands have a space before the parameter
@@ -778,7 +801,7 @@ class DN500AVMessages():
 
         # Handle unexpected leftovers
         if status_command:
-            self.logger.error("unexpected unparsed data found: %s", status_command)
+            self.logger.error("Unexpected unparsed data found: %s", status_command)
 
         if self.subcommand_label:
             self.response = "%s, %s: %s" % (self.command_label, self.subcommand_label, self.parameter_label)
@@ -793,7 +816,7 @@ class DN500AVFormat():
 
     def __init__(self, logger=None):
         self.logger = logger
-        self.mv_reverse_params = new_dict = dict([(value, key) for key, value in mv_params.items()])
+        self.mv_reverse_params = dict([(value, key) for key, value in mv_params.items()])
 
     def get_raw_volume_value_from_db_value(self, value):
         self.logger.debug('value: %s', value)

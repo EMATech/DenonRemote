@@ -52,24 +52,24 @@ class DenonProtocol(LineOnlyReceiver):
                 state = False
                 if receiver.parameter_code == 'ON':
                     state = True
-                self.factory.app.set_mute_button(state)
+                self.factory.app.update_volume_mute(state)
 
             # VOLUME
             if receiver.command_code == 'MV':
                 if receiver.subcommand_code is None:
-                    self.factory.app.set_volume(receiver.parameter_label)
+                    self.factory.app.update_volume(receiver.parameter_label)
 
             # POWER
             if receiver.command_code == 'PW':
                 state = True
                 if receiver.parameter_code == 'STANDBY':
                     state = False
-                self.factory.app.set_power_button(state)
+                self.factory.app.update_power(state)
 
             # SOURCE
             if receiver.command_code == 'SI':
                 source = receiver.parameter_code
-                self.factory.app.set_source(source)
+                self.factory.app.update_source(source)
 
     def connectionMade(self):
         if self.factory.gui:
@@ -100,7 +100,6 @@ class DenonProtocol(LineOnlyReceiver):
         self.sendLine('MU?'.encode('ASCII'))
 
     def set_mute(self, state):
-        self.logger.debug("Entering mute callback")
         if state:
             self.sendLine('MUON'.encode('ASCII'))
         else:

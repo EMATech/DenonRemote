@@ -1,9 +1,14 @@
 from telnetlib import TELNET_PORT
 
+DEBUG = False
+
+GUI = True
+
+# TODO: override at build time
+BUILD_DATE = '<source>'
+
 RECEIVER_IP = '192.168.1.24'
 RECEIVER_PORT = TELNET_PORT
-GUI = True
-DEBUG = True
 
 VOL_PRESET_1 = '-30.0dB'
 VOL_PRESET_2 = '-24.0dB'

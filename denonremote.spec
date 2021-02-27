@@ -4,11 +4,15 @@ from kivy_deps import sdl2, glew
 
 block_cipher = None
 
+added_files = [
+    ( 'Unicode_IEC_symbol.ttf', '.' ),
+    ('assets', 'assets')
+]
 
 a = Analysis(['main.py'],
              pathex=['G:\\raph\\Documents\\GitHub\\denonremote'],
              binaries=[],
-             datas=[],
+             datas=added_files,
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],

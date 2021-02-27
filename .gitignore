@@ -5,3 +5,4 @@ venv
 # PyInstaller
 build
 dist
+__pycache__

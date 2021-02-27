@@ -34,6 +34,13 @@ def run():
     # FIXME: autodetect when running from CLI
     if GUI == True:
         from gui import DenonRemoteApp
+
+        # PyInstaller data support
+        import os, sys
+        from kivy.resources import resource_add_path
+        if hasattr(sys, '_MEIPASS'):
+            resource_add_path(os.path.join(sys._MEIPASS))
+
         DenonRemoteApp().run()
     else:
         from cli import DenonRemoteApp
