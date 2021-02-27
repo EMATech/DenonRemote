@@ -1,6 +1,8 @@
 Denon Remote
 ============
 
+![Screenshot](screenshot-v0.2.0.png)
+
 Author: Raphael Doursenaud <rdoursenaud@gmail.com>
 
 License: [GPLv3+](LICENSE)
