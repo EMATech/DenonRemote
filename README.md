@@ -84,7 +84,7 @@ Dependencies:
     - [x] [RBTray](https://sourceforge.net/projects/rbtray/files/latest/download)
     - [ ] The Pythonic Way
 - [ ] Handle shutdown to power off the device
-- [y] PyInstaller
+- [x] PyInstaller
 - [ ] VST plugin? (Not required if MIDI input is implemented but would be neat to have in the monitoring section of a
   DAW)
     - [ ] See [PyVST](https://pypi.org/project/pyvst/)
