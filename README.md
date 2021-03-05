@@ -1,7 +1,7 @@
 Denon Remote
 ============
 
-![Screenshot](screenshot-v0.2.0.png)
+![Screenshot](screenshot-v0.3.0.png)
 
 Author: Raphael Doursenaud <rdoursenaud@gmail.com>
 
@@ -85,6 +85,11 @@ Dependencies:
     - [ ] The Pythonic Way
 - [ ] Handle shutdown to power off the device
 - [x] PyInstaller
+    - [x] Generate icon with [IconMaker](https://github.com/Inedo/iconmaker)
+    - [x] [UPX](https://upx.github.io/) support
+    - How to build:
+        - Review [denonremote.spec](denonremote.spec)
+        - Use `python -m PyInstaller denonremote.spec --upx-dir=c:\upx-3.96-win64`
 - [ ] VST plugin? (Not required if MIDI input is implemented but would be neat to have in the monitoring section of a
   DAW)
     - [ ] See [PyVST](https://pypi.org/project/pyvst/)

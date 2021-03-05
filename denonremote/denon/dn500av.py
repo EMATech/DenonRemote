@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-from config import GUI
+"""
+Denon DN-500AV serial and IP communication protocol description
+"""
 
-if GUI:
-    from kivy import Logger
+import logging
 
-    logger = Logger
+logger = logging.getLogger(__name__)
 
 commands = {
     'PW': "Power",
@@ -722,11 +723,9 @@ status_requests = {
 # TODO: abstract device
 
 
-class DN500AVMessages():
+class DN500AVMessage:
     # From DN-500 manual (DN-500AVEM_ENG_CD-ROM_v00.pdf)
     # Pages 93-101 (99-107 in PDF form)
-
-    logger = None
 
     command_code = None
     command_label = None
@@ -736,15 +735,15 @@ class DN500AVMessages():
     parameter_label = None
     response = None
 
-    def __init__(self, logger=None):
-        self.logger = logger
+    def __init__(self):
+        pass
 
     def parse_response(self, status_command):
         # Handle strings and bytes
         if type(status_command) is bytes:
             # FIXME: some parts can be UTF-8 encoded
             status_command = status_command.decode('ASCII')
-        self.logger.debug("Received status command: %s", status_command)
+        logger.debug("Received status command: %s", status_command)
 
         # Commands are of known sizes. Try the largest first.
         for i in range(commands_max_size, commands_min_size - 1, -1):
@@ -754,19 +753,19 @@ class DN500AVMessages():
                 break
 
         if self.command_label is None:
-            self.logger.error("Command unknown: %s", status_command)
+            logger.error("Command unknown: %s", status_command)
             return
         else:
-            self.logger.info("Parsed command %s: %s", self.command_code, self.command_label)
+            logger.info("Parsed command %s: %s", self.command_code, self.command_label)
 
         # Trim command from status command stream
         status_command = status_command[len(self.command_code):]
 
         # Handle subcommands
         if commands_subcommands.get(self.command_code) is None:
-            self.logger.debug("The command %s doesn't have any known subcommands.", self.command_code)
+            logger.debug("The command %s doesn't have any known subcommands.", self.command_code)
         else:
-            self.logger.debug("Searching for subcommands in: %s", status_command)
+            logger.debug("Searching for subcommands in: %s", status_command)
 
             # Subcommands are of known sizes. Try the largest first.
             for i in range(commands_subcommands_max_size[self.command_code],
@@ -777,23 +776,23 @@ class DN500AVMessages():
                     break
 
             if self.subcommand_label is None:
-                self.logger.debug("Subcommand unknown. Probably a parameter: %s", status_command)
+                logger.debug("Subcommand unknown. Probably a parameter: %s", status_command)
                 self.subcommand_code = None
             else:
-                self.logger.info("Parsed subcommand %s: %s", self.subcommand_code, self.subcommand_label)
+                logger.info("Parsed subcommand %s: %s", self.subcommand_code, self.subcommand_label)
                 # Trim subcommand from status command stream
                 status_command = status_command[
                                  len(self.subcommand_code) + 1:]  # Subcommands have a space before the parameter
 
         # Handle parameters
-        self.logger.debug("Searching for parameters in: %s", status_command)
+        logger.debug("Searching for parameters in: %s", status_command)
         self.parameter_code = status_command
         if self.command_code == 'PS':
             self.parameter_label = commands_params[self.command_code][self.subcommand_code].get(self.parameter_code)
         else:
             self.parameter_label = commands_params[self.command_code].get(self.parameter_code)
         if self.parameter_label is None:
-            self.logger.error("Parameter unknown: %s", status_command)
+            logger.error("Parameter unknown: %s", status_command)
             self.parameter_code = None
         else:
             # Trim parameters from status command stream
@@ -801,7 +800,7 @@ class DN500AVMessages():
 
         # Handle unexpected leftovers
         if status_command:
-            self.logger.error("Unexpected unparsed data found: %s", status_command)
+            logger.error("Unexpected unparsed data found: %s", status_command)
 
         if self.subcommand_label:
             self.response = "%s, %s: %s" % (self.command_label, self.subcommand_label, self.parameter_label)
@@ -809,17 +808,14 @@ class DN500AVMessages():
             self.response = "%s: %s" % (self.command_label, self.parameter_label)
 
 
-class DN500AVFormat():
-    logger = None
-
+class DN500AVFormat:
     mv_reverse_params = {}
 
-    def __init__(self, logger=None):
-        self.logger = logger
+    def __init__(self):
         self.mv_reverse_params = dict([(value, key) for key, value in mv_params.items()])
 
     def get_raw_volume_value_from_db_value(self, value):
-        self.logger.debug('value: %s', value)
+        logger.debug('value: %s', value)
         raw_value = self.mv_reverse_params['value']
-        self.logger.debug('rawvalue: %s', raw_value)
+        logger.debug('rawvalue: %s', raw_value)
         return raw_value

@@ -6,13 +6,9 @@ from twisted.internet import task, reactor
 from twisted.internet.protocol import ClientFactory
 from twisted.protocols.basic import LineOnlyReceiver
 
-from config import GUI
-from denon.dn500av import DN500AVMessages, DN500AVFormat
+from denon.dn500av import DN500AVMessage, DN500AVFormat
 
-if GUI:
-    from kivy import Logger
-
-    logger = Logger
+logger = logging.getLogger(__name__)
 
 
 # TODO: Implement Serial ?
@@ -24,40 +20,35 @@ class DenonProtocol(LineOnlyReceiver):
     MAX_LENGTH = 135
     DELAY = 0.04  # in seconds. The documentation requires 200 ms. 40 ms seems safe.
     delimiter = b'\r'
-    ongoing_calls = -1  # Delay handling. FIXME: should timeout after 200 ms.
-
-    logger = None
+    ongoing_calls = 0  # Delay handling. FIXME: should timeout after 200 ms.
 
     def sendLine(self, line):
         if b'?' in line:
             # A request is made. We need to delay the next calls
             self.ongoing_calls += 1
-            self.logger.debug("Ongoing calls for delay: %s", self.ongoing_calls)
-        self.logger.debug("Will send line: %s", line)
-        return task.deferLater(reactor, delay=self.DELAY * self.ongoing_calls, callable=super().sendLine, line=line)
+            logger.debug("Ongoing calls for delay: %s", self.ongoing_calls)
+        logger.debug("Will send line: %s", line)
+        if self.ongoing_calls:
+            delay = self.DELAY * (self.ongoing_calls - 1)
+        else:
+            delay = self.DELAY
+        return task.deferLater(reactor, delay=delay,
+                               callable=super().sendLine, line=line)
 
     def lineReceived(self, line):
         if self.ongoing_calls:
             # We received a reply
             self.ongoing_calls -= 1
-            self.logger.debug("Ongoing calls for delay: %s", self.ongoing_calls)
-        receiver = DN500AVMessages(logger=self.logger)
+            logger.debug("Ongoing calls for delay: %s", self.ongoing_calls)
+        receiver = DN500AVMessage()
         receiver.parse_response(line)
-        self.logger.info("Received line: %s", receiver.response)
-        if self.factory.gui:
-            self.factory.app.print_message(receiver.response)
-            # FIXME: abstract
-            # MUTE
-            if receiver.command_code == 'MU':
-                state = False
-                if receiver.parameter_code == 'ON':
-                    state = True
-                self.factory.app.update_volume_mute(state)
+        logger.info("Received line: %s", receiver.response)
 
-            # VOLUME
-            if receiver.command_code == 'MV':
-                if receiver.subcommand_code is None:
-                    self.factory.app.update_volume(receiver.parameter_label)
+        # FIXME: parse message into state
+
+        # FIXME: abstract away with a callback to the factory
+        if self.factory.gui:
+            self.factory.app.print_debug(receiver.response)
 
             # POWER
             if receiver.command_code == 'PW':
@@ -66,10 +57,22 @@ class DenonProtocol(LineOnlyReceiver):
                     state = False
                 self.factory.app.update_power(state)
 
+            # VOLUME
+            if receiver.command_code == 'MV':
+                if receiver.subcommand_code is None:
+                    self.factory.app.update_volume(receiver.parameter_label)
+
+            # MUTE
+            if receiver.command_code == 'MU':
+                state = False
+                if receiver.parameter_code == 'ON':
+                    state = True
+                self.factory.app.set_volume_mute(state)
+
             # SOURCE
             if receiver.command_code == 'SI':
                 source = receiver.parameter_code
-                self.factory.app.update_source(source)
+                self.factory.app.set_sources(source)
 
     def connectionMade(self):
         if self.factory.gui:
@@ -79,7 +82,7 @@ class DenonProtocol(LineOnlyReceiver):
         self.sendLine('PW?'.encode('ASCII'))
 
     def set_power(self, state):
-        self.logger.debug("Entering power callback")
+        logger.debug("Entering power callback")
         if state:
             self.sendLine('PWON'.encode('ASCII'))
         else:
@@ -91,7 +94,7 @@ class DenonProtocol(LineOnlyReceiver):
     def set_volume(self, value):
         rawvalue = DN500AVFormat().mv_reverse_params.get(value)
         if rawvalue is None:
-            self.logger.warning("Set volume value %s is invalid.", value)
+            logger.warning("Set volume value %s is invalid.", value)
         else:
             message = 'MV' + rawvalue
             self.sendLine(message.encode('ASCII'))
@@ -118,7 +121,6 @@ class DenonClientFactory(ClientFactory):
 
     def __init__(self):
         self.gui = False
-        self.protocol.logger = logging.getLogger(__name__)
 
 
 class DenonClientGUIFactory(ClientFactory):
@@ -127,4 +129,6 @@ class DenonClientGUIFactory(ClientFactory):
     def __init__(self, app):
         self.gui = True
         self.app = app
-        self.protocol.logger = Logger
+        import kivy.logger
+        global logger
+        logger = kivy.logger.Logger
