@@ -1,27 +1,29 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-from kivy_deps import sdl2, glew
-
 # Minimize dependencies bundling
-from kivy.tools.packaging.pyinstaller_hooks import get_deps_minimal, get_deps_all, hookspath, runtime_hooks
+from kivy.tools.packaging.pyinstaller_hooks import get_deps_all, hookspath, runtime_hooks
+from kivy_deps import sdl2, glew
 
 block_cipher = None
 
 added_files = [
     ('denonremote\\fonts', 'fonts'),
-    ('denonremote\\images', 'images')
+    ('denonremote\\images', 'images'),
 ]
 
+dependencies = get_deps_all()  # FIXME: minimize dependencies
+dependencies['hiddenimports'].append('pystray._win32')
+
 a = Analysis(['denonremote\\main.py'],
-             pathex=['denonremote'],
+             pathex=['denonremote', '.\\venv\\Lib\\site-packages\\pystray'],
              datas=added_files,
              hookspath=hookspath(),
-             runtime_hooks=[],
+             runtime_hooks=runtime_hooks(),
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher,
              noarchive=False,
-             **get_deps_all())
+             **dependencies)
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 exe = EXE(pyz, Tree('denonremote'),

@@ -3,10 +3,15 @@ import os
 import sys
 
 import kivy.app
+import kivy.core
+import kivy.core.window
+import kivy.logger
 import kivy.resources
 import kivy.support
-
 # FIXME: should be in Config object?
+import pystray
+from kivy.clock import mainthread
+
 from config import RECEIVER_IP, RECEIVER_PORT, VOL_PRESET_1, VOL_PRESET_2, VOL_PRESET_3, FAV_SRC_1_CODE, \
     FAV_SRC_2_CODE, FAV_SRC_3_CODE, DEBUG
 
@@ -23,8 +28,7 @@ from denon.communication import DenonClientGUIFactory
 
 kivy.require('2.0.0')
 
-# Fixed size window
-kivy.Config.set('graphics', 'resizable', False)
+logger = kivy.logger.Logger
 
 APP_PATHS = ['fonts', 'images']
 
@@ -41,20 +45,36 @@ class DenonRemoteApp(kivy.app.App):
     A remote for the Denon DN-500AV Receiver
     """
 
-    client = None
-    """Twisted IP client to the receiver"""
-
     title = "Denon Remote"
     """Application title"""
 
     icon = 'icon.png'
     """Application icon"""
 
+    client = None
+    """Twisted IP client to the receiver"""
+
+    systray: pystray.Icon = None
+
+    hidden = True if kivy.config.Config.get('graphics', 'window_state') == 'hidden' else False
+
+    def run_with_systray(self, systray):
+        self.systray = systray
+        super().run()
+
     def on_start(self):
         """
         Fired by Kivy on application startup
         :return:
         """
+        self.systray.visible = True
+
+        # Hide window into systray
+        kivy.core.window.Window.bind(on_request_close=self.hide_on_close)
+        kivy.core.window.Window.bind(on_minimize=self.hide)
+        # Enable keyboard shortcuts
+        kivy.core.window.Window.bind(on_keyboard=self.on_keyboard)
+
         if not DEBUG:
             # Hide debug_messages
             self.root.ids.debug_messages.size = (0, 0)
@@ -100,6 +120,46 @@ class DenonRemoteApp(kivy.app.App):
         self.client.get_volume()
         self.client.get_mute()
         self.client.get_source()
+
+    @mainthread
+    def show(self, window=None):
+        if window is None:
+            window = self.root_window
+        window.restore()
+        window.raise_window()
+        window.show()
+        self.hidden = False
+
+    @mainthread
+    def hide(self, window=None):
+        if window is None:
+            window = self.root_window
+        window.hide()
+        self.hidden = True
+
+    def hide_on_close(self, window, source=None):
+        logger.debug("Hide from %s", source)
+        self.hide(window)
+        return True  # Keeps the application alive instead of stopping
+
+    def on_keyboard(self, window, key, scancode, codepoint, modifier):
+        """
+        Handle keyboard shortcuts
+
+        :param window:
+        :param key:
+        :param scancode:
+        :param codepoint:
+        :param modifier:
+        :return:
+        """
+        logger.debug("key: %s, scancode: %s, codepoint: %s, modifier: %s", key, scancode, codepoint, modifier)
+        if codepoint == 'm':
+            self.root.ids.volume_mute.trigger_action()
+        if scancode == 82:  # Up
+            self.root.ids.volume_plus.trigger_action()
+        if scancode == 81:  # Down
+            self.root.ids.volume_minus.trigger_action()
 
     def update_power(self, status=True):
         if status:

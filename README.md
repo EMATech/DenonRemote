@@ -17,7 +17,7 @@ Dependencies:
 
 #### Target hardware
 
-- [x] DN-500AV
+- [x] Denon Professional DN-500AV (Seems based on the same platform as the Denon AVR-1912 and AVR-2112CI.)
 - [ ] More? Contributions welcome!
 
 #### Communication
@@ -55,8 +55,8 @@ Dependencies:
         - [x] Relative
         - [x] Absolute
     - [x] Mute
-    - [x] Presets! (-18dBFS, -24dBFS…)
-    - [ ] SPL calibrated display (-18dBFS = 85dBSPL)
+    - [x] Presets! (-18dB, -24dB…)
+    - [ ] SPL calibrated display (SMPTE RP200: -18dBFS = 85dB C SPL)
 - [ ] Input select
 - [ ] Security
     - [ ] Panel Lock
@@ -77,19 +77,23 @@ Dependencies:
 ##### GUI
 
 - [x] Using [Kivy](https://kivy.org)
+    - [ ] Keyboard shortcuts:
+        - [x] M for Mute
+        - [x] Up/Down Vol +/-
+        - [ ] Left/Right VolPreset +/-
+        - [ ] PgUp/PgDwn SrcPreset +/-
+- [x] Systray/Taskbar support using [pystray](https://pypi.org/project/pystray/)
 
 ##### Windows executable
 
-- [x] Find a way to make it resident in the task bar with a nice icon, like soundcard control panel
-    - [x] [RBTray](https://sourceforge.net/projects/rbtray/files/latest/download)
-    - [ ] The Pythonic Way
 - [ ] Handle shutdown to power off the device
-- [x] PyInstaller
+- [x] [PyInstaller](https://www.pyinstaller.org)
     - [x] Generate icon with [IconMaker](https://github.com/Inedo/iconmaker)
     - [x] [UPX](https://upx.github.io/) support
     - How to build:
         - Review [denonremote.spec](denonremote.spec)
         - Use `python -m PyInstaller denonremote.spec --upx-dir=c:\upx-3.96-win64`
+- [ ] [cx-Freeze](https://pypi.org/project/cx-Freeze/) for multiplatform support?
 - [ ] VST plugin? (Not required if MIDI input is implemented but would be neat to have in the monitoring section of a
   DAW)
     - [ ] See [PyVST](https://pypi.org/project/pyvst/)
@@ -99,3 +103,53 @@ Dependencies:
 - [ ] Autonomous mobile app? Kivy enables that!
     - [ ] Android
     - [ ] iOS/iPadOS
+
+#### Proxy?
+
+The receiver only allows 1 active connection. A dispatcher proxy could allow multiple simultaneous remotes (Desktop and
+mobile).
+
+### Other opportunities
+
+Open ports:
+
+- 23/tcp (TELNET): BridgeCo AG Telnet server  
+  AVR serial protocol used here
+- 80/tcp (HTTP): GoAhead WebServer  
+  Web control (index.asp) Shows nothing.  
+  Most of the useful code is commented!  
+  CSS loading at "css/mainMenu.css" times out.  
+  Main control is available at "MainZone/index.html"!
+- 443/tcp (HTTPS): ERR_SSL_PROTOCOL_ERROR in Google Chrome  
+  SSL_ERROR_EXTRACT_PUBLIC_KEY_FAILURE in Mozilla Firefox
+- 1026/tcp (RTSP): Apple AirTunes rtspd 103.2
+- 6666/tcp: ?
+- 8080/tcp (HTTP): AV receiver http config
+
+### Similar projects
+
+Android
+
+- [AVR-Remote](https://github.com/pskiwi/avr-remote)
+
+JavaScript:
+
+- https://github.com/phillipsnick/denon-avr
+- https://github.com/murderbeard/com.moz.denon
+- https://github.com/jtangelder/denon-remote
+
+PHP
+
+- https://github.com/Wolbolar/IPSymconDenon (IP Symcon automation)
+
+Python:
+
+- https://github.com/jeroenvds/denonremote (XBMC plugin)
+- https://github.com/Tom360V/DenonAvr (Similar objectives?
+- https://github.com/toebsen/python-denonavr (HTTP RESTful server)
+- https://github.com/MrJavaWolf/DenonPhoneController (Landline phone controller)
+- https://github.com/troykelly/python-denon-avr-serial-over-ip (Library)
+- https://github.com/auchter/denonavr_serial (Library)
+- https://github.com/jphutchins/pyavreceiver (Nice library)
+- https://github.com/frawau/aiomadeavr (Library)
+- https://github.com/scarface-4711/denonavr (Uses the HTTP/XML interface. Library)
