@@ -1,0 +1,9 @@
+[
+  {
+    "type": "string",
+    "title": "Receiver IP address or network name",
+    "desc": "Set the receiver's IP address or name.\n(Menu > Network Setup > Network Info. > IP Address)",
+    "section": "denonremote",
+    "key": "receiver_ip"
+  }
+]

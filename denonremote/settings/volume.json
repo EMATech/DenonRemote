@@ -1,0 +1,23 @@
+[
+  {
+    "type": "string",
+    "title": "Preset 1",
+    "desc": "Set the volume of preset 1",
+    "section": "denonremote",
+    "key": "vol_preset_1"
+  },
+  {
+    "type": "string",
+    "title": "Preset 2",
+    "desc": "Set the volume of preset 2",
+    "section": "denonremote",
+    "key": "vol_preset_2"
+  },
+  {
+    "type": "string",
+    "title": "Preset 3",
+    "desc": "Set the volume of preset 3",
+    "section": "denonremote",
+    "key": "vol_preset_3"
+  }
+]

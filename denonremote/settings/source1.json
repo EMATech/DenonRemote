@@ -1,0 +1,16 @@
+[
+  {
+    "type": "string",
+    "title": "Label",
+    "desc": "Set favorite source 1 custom label",
+    "section": "denonremote",
+    "key": "fav_src_1_label"
+  },
+  {
+    "type": "string",
+    "title": "Code",
+    "desc": "Set favorite source 1 code",
+    "section": "denonremote",
+    "key": "fav_src_1_code"
+  }
+]

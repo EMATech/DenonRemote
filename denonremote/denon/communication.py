@@ -22,16 +22,26 @@ class DenonProtocol(LineOnlyReceiver):
     delimiter = b'\r'
     ongoing_calls = 0  # Delay handling. FIXME: should timeout after 200 ms.
 
+    def connectionMade(self):
+        logger.debug("Connection made")
+        if self.factory.gui:
+            self.factory.app.on_connection(self)
+
+    def timeoutConnection(self):
+        logger.debug("Connection timed out")
+        self.transport.abortConnection()
+        if self.factory.gui:
+            self.factory.app.on_timeout()
+
     def sendLine(self, line):
         if b'?' in line:
             # A request is made. We need to delay the next calls
             self.ongoing_calls += 1
             logger.debug("Ongoing calls for delay: %s", self.ongoing_calls)
-        logger.debug("Will send line: %s", line)
-        if self.ongoing_calls:
+        delay = 0
+        if self.ongoing_calls > 0:
             delay = self.DELAY * (self.ongoing_calls - 1)
-        else:
-            delay = self.DELAY
+        logger.debug("Will send line: %s in %f seconds", line, delay)
         return task.deferLater(reactor, delay=delay,
                                callable=super().sendLine, line=line)
 
@@ -73,10 +83,6 @@ class DenonProtocol(LineOnlyReceiver):
             if receiver.command_code == 'SI':
                 source = receiver.parameter_code
                 self.factory.app.set_sources(source)
-
-    def connectionMade(self):
-        if self.factory.gui:
-            self.factory.app.on_connection(self)
 
     def get_power(self):
         self.sendLine('PW?'.encode('ASCII'))
@@ -132,3 +138,9 @@ class DenonClientGUIFactory(ClientFactory):
         import kivy.logger
         global logger
         logger = kivy.logger.Logger
+
+    def clientConnectionFailed(self, connector, reason):
+        self.app.on_connection_failed(connector, reason)
+
+    def clientConnectionLost(self, connector, reason):
+        self.app.on_connection_lost(connector, reason)

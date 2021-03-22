@@ -1,4 +1,6 @@
-twisted
-kivy
-pystray
+twisted~=21.2.0
+kivy~=2.0.0
+pystray~=0.17.2
+Pillow~=8.1.2
 PyInstaller
+buildozer

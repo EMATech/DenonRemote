@@ -1,6 +1,8 @@
 Denon Remote
 ============
 
+Control Denon Professional DN-500AV surround preamplifier remotely.
+
 ![Screenshot](screenshot-v0.3.0.png)
 
 Author: Raphael Doursenaud <rdoursenaud@gmail.com>
@@ -9,9 +11,10 @@ License: [GPLv3+](LICENSE)
 
 Language: [Python](https://python.org) 3
 
-Dependencies:
+Fonts used:
 
 - [Unicode Power Symbol](https://unicodepowersymbol.com/) Copyright (c) 2013 Joe Loughry licensed under MIT
+- [Free Serif](https://savannah.gnu.org/projects/freefont/) licensed under GPLv3
 
 ### Features
 
@@ -41,7 +44,7 @@ Dependencies:
 
 #### Controls
 
-- [ ] Setup
+- [x] Setup
     - [x] IP address
     - [ ] Serial port?
         - [ ] COM (Windows)
@@ -83,6 +86,7 @@ Dependencies:
         - [ ] Left/Right VolPreset +/-
         - [ ] PgUp/PgDwn SrcPreset +/-
 - [x] Systray/Taskbar support using [pystray](https://pypi.org/project/pystray/)
+- [ ] Only one instance should be allowed
 
 ##### Windows executable
 

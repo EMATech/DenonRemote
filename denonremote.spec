@@ -9,10 +9,12 @@ block_cipher = None
 added_files = [
     ('denonremote\\fonts', 'fonts'),
     ('denonremote\\images', 'images'),
+    ('denonremote\\settings', 'settings')
 ]
 
 dependencies = get_deps_all()  # FIXME: minimize dependencies
-dependencies['hiddenimports'].append('pystray._win32')
+dependencies['hiddenimports'].append(
+    'pystray._win32')  # FIXME: use the hook at https://github.com/moses-palmer/pystray/issues/55
 
 a = Analysis(['denonremote\\main.py'],
              pathex=['denonremote', '.\\venv\\Lib\\site-packages\\pystray'],

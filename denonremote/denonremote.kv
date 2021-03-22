@@ -1,161 +1,173 @@
-#:import VOL_PRESET_1 config.VOL_PRESET_1
-#:import VOL_PRESET_2 config.VOL_PRESET_2
-#:import VOL_PRESET_3 config.VOL_PRESET_3
-#:import FAV_SRC_1_LABEL config.FAV_SRC_1_LABEL
-#:import FAV_SRC_2_LABEL config.FAV_SRC_2_LABEL
-#:import FAV_SRC_3_LABEL config.FAV_SRC_3_LABEL
-#:import FAV_SRC_1_CODE config.FAV_SRC_1_CODE
-#:import FAV_SRC_2_CODE config.FAV_SRC_2_CODE
-#:import FAV_SRC_3_CODE config.FAV_SRC_3_CODE
 #:import VERSION main.__version__
-#:import DEBUG config.DEBUG
-#:import BUILD_DATE config.BUILD_DATE
 #:import system platform.system
-#:import BooleanProperty kivy.properties.BooleanProperty
+#:import BUILD_DATE main.__BUILD_DATE__
 
 FloatLayout:
 
-    Image:
-        id: denon_image
-        source: 'DN-500AV.png'
-        size: (0, 50)
-        size_hint: (.3, None)
-        pos_hint: {'top': .96, 'left': .99}
+    FloatLayout:
+        id: main
+        disabled: True
 
-    Label:
-        id: name_label
-        text: "DENON REMOTE"
-        font_size: 40
-        bold: True
-        size: (200, 50)
-        size_hint: (1, None)
-        pos_hint: {'top': .96}
-        color: [.75, .75, .75, 1]
+        Image:
+            id: denon_image
+            source: 'DN-500AV.png'
+            size: (0, 50)
+            size_hint: (.25, None)
+            pos_hint: {'top': .96, 'left': 1}
 
-    ToggleButton:
-        id: power
-        text: "⏻"
-        font_name: 'Unicode_IEC_symbol'
-        font_size: 50
-        size: (80, 72)
-        size_hint: (None, None)
-        pos_hint: {'top': .983, 'right': .89}
-        color: [.1, .8, .1, 1] if self.state == 'down' else [.8, .1, .1, 1]  # Green when down otherwise red
-        background_color: [.25, .25, .25, 1]
-        on_press: app.power_pressed(self)
+        Label:
+            id: name
+            text: "DENON REMOTE"
+            font_size: 50
+            bold: True
+            size: (200, 50)
+            size_hint: (1, None)
+            pos_hint: {'top': .96}
+            color: [.75, .75, .75, 1]
 
-    BoxLayout:
-        id: content
-        orientation: 'vertical'
-        spacing: 15
-        size_hint: (1, .75)
-        pos: (0, 63)
-        pos_hint: {'top': .85}
+        ToggleButton:
+            id: power
+            text: "⏻"
+            font_name: 'Unicode_IEC_symbol'
+            font_size: 50
+            size: (80, 72)
+            size_hint: (None, None)
+            pos_hint: {'top': .983, 'right': .89}
+            color: [.1, .8, .1, 1] if self.state == 'down' else [.8, .1, .1, 1]  # Green when down otherwise red
+            background_color: [.25, .25, .25, 1]
+            on_press: app.power_pressed(self)
 
         BoxLayout:
-            id: volume_section
+            id: content
             orientation: 'vertical'
-            disabled: False if root.ids.power.state == 'down' else True
-
-            TextInput:
-                id: volume_display
-                text: "---.-dB"
-                font_name: 'RobotoMono-Regular'
-                font_size: 36
-                halign: 'center'
-                multiline: False
-                size: (200, 60)
-                size_hint: (1, None)
-                foreground_color: [.85, .85, .85, 1]
-                background_color: [.1, .1, .1, 1]
-                on_text_validate: app.volume_text_changed(self)
+            spacing: 15
+            size_hint: (1, .75)
+            pos: (0, 63)
+            pos_hint: {'top': .85}
 
             BoxLayout:
-                id: volume_keys_layout
-                orientation: 'horizontal'
+                id: volume_section
+                orientation: 'vertical'
+                disabled: False if root.ids.power.state == 'down' else True
 
-                Button
-                    id: volume_minus
-                    text: "-"
-                    on_press: app.volume_minus_pressed(self)
+                TextInput:
+                    id: volume_display
+                    text: "---.-dB"
+                    font_name: 'RobotoMono-Regular'
+                    font_size: 36
+                    halign: 'center'
+                    multiline: False
+                    size: (200, 60)
+                    size_hint: (1, None)
+                    foreground_color: [.85, .85, .85, 1]
+                    background_color: [.1, .1, .1, 1]
+                    on_text_validate: app.volume_text_changed(self)
 
-                Button:
-                    id: volume_plus
-                    text: "+"
-                    on_press: app.volume_plus_pressed(self)
+                BoxLayout:
+                    id: volume_keys_layout
+                    orientation: 'horizontal'
 
-            ToggleButton:
-                id: volume_mute
-                text: "Mute"
-                group: 'mute'
-                on_press: app.volume_mute_pressed(self)
+                    Button
+                        id: volume_minus
+                        text: "-"
+                        on_press: app.volume_minus_pressed(self)
 
-            BoxLayout
-                id: volume_presets_layout
-                orientation: 'horizontal'
-
-                ToggleButton:
-                    id: vol_preset_1
-                    text: VOL_PRESET_1  # FIXME: get from config
-                    group: 'vol_preset'
-                    on_press: app.vol_preset_1_pressed(self)
-
-                ToggleButton:
-                    id: vol_preset_2
-                    text: VOL_PRESET_2  # FIXME: get from config
-                    group: 'vol_preset'
-                    on_press: app.vol_preset_2_pressed(self)
+                    Button:
+                        id: volume_plus
+                        text: "+"
+                        on_press: app.volume_plus_pressed(self)
 
                 ToggleButton:
-                    id: vol_preset_3
-                    text: VOL_PRESET_3  # FIXME: get from config
-                    group: 'vol_preset'
-                    on_press: app.vol_preset_3_pressed(self)
+                    id: volume_mute
+                    text: "Mute"
+                    group: 'mute'
+                    on_press: app.volume_mute_pressed(self)
+
+                BoxLayout
+                    id: volume_presets_layout
+                    orientation: 'horizontal'
+
+                    ToggleButton:
+                        id: vol_preset_1
+                        text: app.config.get('denonremote', 'vol_preset_1')
+                        group: 'vol_preset'
+                        on_press: app.vol_preset_1_pressed(self)
+
+                    ToggleButton:
+                        id: vol_preset_2
+                        text: app.config.get('denonremote', 'vol_preset_2')
+                        group: 'vol_preset'
+                        on_press: app.vol_preset_2_pressed(self)
+
+                    ToggleButton:
+                        id: vol_preset_3
+                        text: app.config.get('denonremote', 'vol_preset_3')
+                        group: 'vol_preset'
+                        on_press: app.vol_preset_3_pressed(self)
+
+            BoxLayout:
+                id: sources_section
+                orientation: 'vertical'
+
+                ToggleButton:
+                    id: fav_src_1
+                    text: app.config.get('denonremote', 'fav_src_1_label')
+                    group: 'sources'
+                    on_press: app.fav_src_1_pressed(self)
+
+                ToggleButton:
+                    id: fav_src_2
+                    text: app.config.get('denonremote', 'fav_src_2_label')
+                    group: 'sources'
+                    on_press: app.fav_src_2_pressed(self)
+
+                ToggleButton:
+                    id: fav_src_3
+                    text: app.config.get('denonremote', 'fav_src_3_label')
+                    group: 'sources'
+                    on_press: app.fav_src_3_pressed(self)
+
+
+    FloatLayout:
+        id: footer
+        disabled: False
+        size: (1, 60)
+        size_hint: (1, None)
+
+        Button:
+            id: settings
+            text: "⚙"
+            font_name: 'FreeSerif'
+            font_size: 50
+            size: (80, 60)
+            size_hint: (.25, None)
+            pos_hint: {'bottom': 1}
+            background_color: [0, 0, 0, 1]
+            disabled: False
+            on_press: app.open_settings(self)
 
         BoxLayout:
-            id: sources_section
+            id: brand_layout
             orientation: 'vertical'
+            size: (200, 60)
+            size_hint: (1, None)
+            pos_hint: {'bottom': 1}
 
-            ToggleButton:
-                id: fav_src_1
-                text: FAV_SRC_1_LABEL  # FIXME: get from config
-                group: 'sources'
-                on_press: app.fav_src_1_pressed(self)
+            Label:
+                id: brand_label
+                text: "EMA Tech."
 
-            ToggleButton:
-                id: fav_src_2
-                text: FAV_SRC_2_LABEL  # FIXME: get from config
-                group: 'sources'
-                on_press: app.fav_src_2_pressed(self)
+            Label:
+                id: version_label
+                text: "v%s %s (Built on %s)" % (VERSION, system(), BUILD_DATE)
+                font_size: 10
 
-            ToggleButton:
-                id: fav_src_3
-                text: FAV_SRC_3_LABEL  # FIXME: get from config
-                group: 'sources'
-                on_press: app.fav_src_3_pressed(self)
-
-    BoxLayout:
-        id: brand_layout
-        orientation: 'vertical'
-        size: (200, 65)
-        size_hint: (1, None)
-        pos_hint: {'bottom': 1}
-
-        Label:
-            id: brand_label
-            text: "EMA Tech."
-
-        Label:
-            id: version_label
-            text: "v%s %s (Built on %s)" % (VERSION, system(), BUILD_DATE)  # FIXME: get from config
-            font_size: 10
-
-    TextInput:
-        id: debug_messages
-        text: "Initializing GUI...\n"
-        readonly: True
-        background_color: [0, 0, 0, 1]
-        foreground_color: [0, 1, 0, 1]
-        size: (200, 65)
-        size_hint: (1, None)
-
+        TextInput:
+            id: debug_messages
+            text: "Initializing GUI...\n"
+            readonly: True
+            background_color: [0, 0, 0, 1]
+            foreground_color: [0, 1, 0, 1]
+            size: (200, 60)
+            size_hint: (.333, None)
+            pos_hint: {'bottom': 1, 'right': 1}
