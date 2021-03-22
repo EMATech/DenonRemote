@@ -3,7 +3,9 @@ Denon Remote
 
 Control Denon Professional DN-500AV surround preamplifier remotely.
 
-![Screenshot](screenshot-v0.3.0.png)
+![Screenshot](screenshot-v0.5.0-main.png)
+
+![Settings Screenshot](screenshot-v0.5.0-settings.png)
 
 Author: Raphael Doursenaud <rdoursenaud@gmail.com>
 
