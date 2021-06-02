@@ -61,19 +61,19 @@ Fonts used:
         - [x] Relative
         - [x] Absolute
     - [x] Mute
-    - [x] SPL calibrated display
-        - [x] EBU/SMPTE RP200: 85dB C SPL @ -18 dBFS (Equivalent to 83 dB C SPL @ -20 dBFS)
-        - [x] K meter
-            - [x] K-20: -20dBFS = 83dB C SPL (Same as SMPTE and EBU)
-            - [x] K-14: -14dBFS = 83dB C SPL
-                - [ ] Can be compensated from SMPTE/EBU levels by lowering the output volume by 6dB
-            - [x] K-12: -12dBFS = 83dB C SPL
-                - [ ] Can be compensated from SMPTE/EBU levels by lowering the output volume by 8dB
-        - [x] EBU R 128: -23LUFS (-23dBFS) = 73dB C SPL (Debatable/unclear removed for now)
-        - [x] Presets!
-            - [x] Relative (-18dB, -24dB…)
-            - [ ] Absolute
-            - [ ] SPL calibrated
+- [x] SPL calibrated display
+    - [x] EBU/SMPTE RP200: 85dB C SPL @ -18 dBFS (Equivalent to 83 dB C SPL @ -20 dBFS)
+    - [x] K meter
+        - [x] K-20: -20dBFS = 83dB C SPL (Same as SMPTE and EBU)
+        - [x] K-14: -14dBFS = 83dB C SPL
+            - [ ] Can be compensated from SMPTE/EBU levels by lowering the output volume by 6dB
+        - [x] K-12: -12dBFS = 83dB C SPL
+            - [ ] Can be compensated from SMPTE/EBU levels by lowering the output volume by 8dB
+    - [x] EBU R 128: -23LUFS (-23dBFS) = 73dB C SPL (Debatable/unclear removed for now)
+    - [x] Presets!
+        - [x] Relative (-18dB, -24dB…)
+        - [ ] Absolute
+        - [ ] SPL calibrated
 - [ ] Input select
     - [x] Favorites
 - [ ] Security
