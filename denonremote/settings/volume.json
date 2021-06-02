@@ -19,5 +19,12 @@
     "desc": "Set the volume of preset 3",
     "section": "denonremote",
     "key": "vol_preset_3"
+  },
+  {
+    "type": "string",
+    "title": "Preset 4",
+    "desc": "Set the volume of preset 4",
+    "section": "denonremote",
+    "key": "vol_preset_4"
   }
 ]

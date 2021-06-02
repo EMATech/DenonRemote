@@ -2,6 +2,9 @@
 #:import system platform.system
 #:import BUILD_DATE main.__BUILD_DATE__
 
+<ForcedToggleButton@ToggleButton>
+    allow_no_selection: False
+
 FloatLayout:
 
     FloatLayout:
@@ -45,23 +48,77 @@ FloatLayout:
             pos: (0, 63)
             pos_hint: {'top': .85}
 
+            BoxLayout
+                id: spl_section
+                orientation: 'horizontal'
+
+                BoxLayout
+                    id: spl_mode_section_1
+                    orientation: 'vertical'
+
+                    ForcedToggleButton
+                        id: mode_k20
+                        text: "K-20"
+                        group: 'mode_ref'
+                        on_press: app.mode_changed(self)
+
+                    ForcedToggleButton
+                        id: mode_ebu
+                        text: "EBU/SMPTE"
+                        state: 'down'  # Default
+                        group: 'mode_ref'
+                        on_press: app.mode_changed(self)
+
+                BoxLayout
+                    id: spl_display_section
+                    orientation: 'vertical'
+
+                    TextInput:
+                        id: spl_display
+                        text: "---dB SPL"
+                        readonly: True
+                        font_name: 'RobotoMono-Regular'
+                        font_size: 36
+                        halign: 'center'
+                        multiline: False
+                        foreground_color: [.85, .85, .85, 1]
+                        background_color: [.1, .1, .1, 1]
+                        #on_text_validate: app.spl_text_changed(self)
+                        disabled: False if root.ids.power.state == 'down' else True
+
+                    TextInput:
+                        id: ref_display
+                        text: "@ ---dB FS"
+                        readonly: True
+                        font_name: 'RobotoMono-Regular'
+                        font_size: 24
+                        halign: 'center'
+                        valign: 'middle'
+                        multiline: False
+                        foreground_color: [.85, .85, .85, 1]
+                        background_color: [.1, .1, .1, 1]
+                        #on_text_validate: app.ref_text_changed(self)
+
+                BoxLayout
+                    id: spl_mode_section_2
+                    orientation: 'vertical'
+
+                    ForcedToggleButton
+                        id: mode_k14
+                        text: "K-14"
+                        group: 'mode_ref'
+                        on_press: app.mode_changed(self)
+
+                    ForcedToggleButton
+                        id: mode_k12
+                        text: "K-12"
+                        group: 'mode_ref'
+                        on_press: app.mode_changed(self)
+
             BoxLayout:
                 id: volume_section
                 orientation: 'vertical'
                 disabled: False if root.ids.power.state == 'down' else True
-
-                TextInput:
-                    id: volume_display
-                    text: "---.-dB"
-                    font_name: 'RobotoMono-Regular'
-                    font_size: 36
-                    halign: 'center'
-                    multiline: False
-                    size: (200, 60)
-                    size_hint: (1, None)
-                    foreground_color: [.85, .85, .85, 1]
-                    background_color: [.1, .1, .1, 1]
-                    on_text_validate: app.volume_text_changed(self)
 
                 BoxLayout:
                     id: volume_keys_layout
@@ -71,6 +128,17 @@ FloatLayout:
                         id: volume_minus
                         text: "-"
                         on_press: app.volume_minus_pressed(self)
+
+                    TextInput:
+                        id: volume_display
+                        text: "---.-dB"
+                        font_name: 'RobotoMono-Regular'
+                        font_size: 36
+                        halign: 'center'
+                        multiline: False
+                        foreground_color: [.85, .85, .85, 1]
+                        background_color: [.1, .1, .1, 1]
+                        on_text_validate: app.volume_text_changed(self)
 
                     Button:
                         id: volume_plus
@@ -82,6 +150,12 @@ FloatLayout:
                     text: "Mute"
                     group: 'mute'
                     on_press: app.volume_mute_pressed(self)
+
+            BoxLayout
+                id: presets_section
+                orientation: 'vertical'
+                disabled: False if root.ids.power.state == 'down' else True
+                size_hint: (1, .5)
 
                 BoxLayout
                     id: volume_presets_layout
@@ -105,9 +179,16 @@ FloatLayout:
                         group: 'vol_preset'
                         on_press: app.vol_preset_3_pressed(self)
 
+                    ToggleButton:
+                        id: vol_preset_4
+                        text: app.config.get('denonremote', 'vol_preset_4')
+                        group: 'vol_preset'
+                        on_press: app.vol_preset_4_pressed(self)
+
             BoxLayout:
                 id: sources_section
                 orientation: 'vertical'
+                size_hint: (1, 1.5)
 
                 ToggleButton:
                     id: fav_src_1
@@ -126,7 +207,6 @@ FloatLayout:
                     text: app.config.get('denonremote', 'fav_src_3_label')
                     group: 'sources'
                     on_press: app.fav_src_3_pressed(self)
-
 
     FloatLayout:
         id: footer
@@ -156,6 +236,11 @@ FloatLayout:
             Label:
                 id: brand_label
                 text: "EMA Tech."
+
+            Label:
+                id: copyright_label
+                text: "(c) 2021 Raphaël Doursenaud"
+                font_size: 12
 
             Label:
                 id: version_label

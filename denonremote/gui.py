@@ -10,6 +10,7 @@ import kivy.core.window
 import kivy.logger
 import kivy.resources
 import kivy.support
+import kivy.uix.behaviors
 import kivy.uix.settings
 import pystray
 from kivy.clock import mainthread
@@ -77,9 +78,14 @@ class DenonRemoteApp(kivy.app.App):
             'debug': False,
             'receiver_ip': '192.168.x.y',
             'receiver_port': TELNET_PORT,
+            'reference_level': '-18',
+            'reference_spl': '85',  # SMPTE RP200:2012 & Katz metering system also equivalent to EBU 83dbSPLC@-20dBFS
+            'reference_volume': '-18',
             'vol_preset_1': '-30.0dB',
-            'vol_preset_2': '-24.0dB',
-            'vol_preset_3': '-18.0dB',
+            'vol_preset_2': '-26.0dB',  # K-12
+            # -25.0dB  # EBU R 128
+            'vol_preset_3': '-24.0dB',  # K-14 / Dolby Home Cinema
+            'vol_preset_4': '-18.0dB',  # SMPTE/EBU/Dolby theater
             'fav_src_1_code': 'GAME',
             'fav_src_1_label': 'Computer HDMI',
             'fav_src_2_code': 'CD',
@@ -90,15 +96,17 @@ class DenonRemoteApp(kivy.app.App):
 
     def build_settings(self, settings):
         settings.add_json_panel("Communication", self.config,
-                                filename=kivy.resources.resource_find('communication.json'))
+                                filename=kivy.resources.resource_find('settings/communication.json'))
+        settings.add_json_panel("Volume display", self.config,
+                                filename=kivy.resources.resource_find('settings/display.json'))
         settings.add_json_panel("Volume presets", self.config,
-                                filename=kivy.resources.resource_find('volume.json'))
+                                filename=kivy.resources.resource_find('settings/volume.json'))
         settings.add_json_panel("Favorite source 1", self.config,
-                                filename=kivy.resources.resource_find('source1.json'))
+                                filename=kivy.resources.resource_find('settings/source1.json'))
         settings.add_json_panel("Favorite source 2", self.config,
-                                filename=kivy.resources.resource_find('source2.json'))
+                                filename=kivy.resources.resource_find('settings/source2.json'))
         settings.add_json_panel("Favorite source 3", self.config,
-                                filename=kivy.resources.resource_find('source3.json'))
+                                filename=kivy.resources.resource_find('settings/source3.json'))
 
     def on_config_change(self, config, section, key, value):
         if config is self.config:
@@ -112,6 +120,8 @@ class DenonRemoteApp(kivy.app.App):
                     self.root.ids.vol_preset_2.text = value
                 if key == 'vol_preset_3':
                     self.root.ids.vol_preset_3.text = value
+                if key == 'vol_preset_4':
+                    self.root.ids.vol_preset_4.text = value
                 if key == 'fav_src_1_label':
                     self.root.ids.fav_src_1.text = value
                 if key == 'fav_src_2_label':
@@ -281,20 +291,77 @@ class DenonRemoteApp(kivy.app.App):
         power = False if instance.state == 'normal' else True
         self.client.set_power(power)
 
-    def update_volume(self, text=""):
-        self.root.ids.volume_display.text = text
-        if text in self.config.get('denonremote', 'vol_preset_1'):
-            self.root.ids.vol_preset_1.state = 'down'
+    def update_volume(self, text="", ref_level=None):
+        # If we get no text, retrieve the currently displayed one
+        if text == "":
+            text = self.root.ids.volume_display.text
         else:
-            self.root.ids.vol_preset_1.state = 'normal'
-        if text in self.config.get('denonremote', 'vol_preset_2'):
-            self.root.ids.vol_preset_2.state = 'down'
-        else:
-            self.root.ids.vol_preset_2.state = 'normal'
-        if text in self.config.get('denonremote', 'vol_preset_3'):
-            self.root.ids.vol_preset_3.state = 'down'
-        else:
-            self.root.ids.vol_preset_3.state = 'normal'
+            # We don't need to update the volume display if no text is passed
+            self.root.ids.volume_display.text = text
+            if text in self.config.get('denonremote', 'vol_preset_1'):
+                self.root.ids.vol_preset_1.state = 'down'
+            else:
+                self.root.ids.vol_preset_1.state = 'normal'
+            if text in self.config.get('denonremote', 'vol_preset_2'):
+                self.root.ids.vol_preset_2.state = 'down'
+            else:
+                self.root.ids.vol_preset_2.state = 'normal'
+            if text in self.config.get('denonremote', 'vol_preset_3'):
+                self.root.ids.vol_preset_3.state = 'down'
+            else:
+                self.root.ids.vol_preset_3.state = 'normal'
+            if text in self.config.get('denonremote', 'vol_preset_4'):
+                self.root.ids.vol_preset_4.state = 'down'
+            else:
+                self.root.ids.vol_preset_4.state = 'normal'
+
+        # Retrieve the displayed reference level if not passed
+        if ref_level is None:
+            # Get pressed option
+            mode_ref_widgets = kivy.uix.behaviors.togglebutton.ToggleButtonBehavior.get_widgets('mode_ref')
+            active_widget = next(widget for widget in mode_ref_widgets if widget.state == 'down')
+            ref_level = self._get_mode_level(active_widget.text)
+
+        # Update the SPL display
+        (spl_text, ref_text) = self._compute_spl_text(text, ref_level)
+        self.root.ids.spl_display.text = spl_text
+        self.root.ids.ref_display.text = ref_text
+
+    def _compute_spl_text(self, text="", ref_level=-18):
+        # FIXME: Handle Absolute mode
+        # Relative mode computation
+        volume = float(text[:-2])  # strip dB
+        volume_delta = volume - float(
+            self.config.get('denonremote', 'reference_volume'))  # compute delta with reference volume
+        spl = int(round(
+            float(self.config.get('denonremote', 'reference_spl')) + volume_delta))  # apply delta to reference SPL
+        # Reference mode handling
+        ref_delta = ref_level - int(
+            self.config.get('denonremote', 'reference_level'))  # compute delta with reference level
+        spl = spl + ref_delta
+        spl_text = "%i dB SPL" % spl  # format string with computed SPL and reference level mode
+        ref_text = "@ %i dBFS" % ref_level
+        text = (spl_text, ref_text)
+        return text
+
+    def mode_changed(self, instance):
+        level = self._get_mode_level(instance.text)
+        self.update_volume(ref_level=level)
+
+    @staticmethod
+    def _get_mode_level(instance_text):
+        level = -18  # We default to EBU
+        if instance_text == 'EBU R 128':
+            level = -23  # LUFS
+        elif instance_text == 'K-20':
+            level = -20  # dBFS
+        elif instance_text == 'EBU/SMPTE':
+            level = -18  # dBFS
+        elif instance_text == 'K-14':
+            level = -14  # dBFS
+        elif instance_text == 'K-12':
+            level = -12  # dBFS
+        return level
 
     def volume_text_changed(self, instance):
         # TODO: validate user input
@@ -333,6 +400,10 @@ class DenonRemoteApp(kivy.app.App):
 
     def vol_preset_3_pressed(self, instance):
         self.client.set_volume(self.config.get('denonremote', 'vol_preset_3'))
+        instance.state = 'down'
+
+    def vol_preset_4_pressed(self, instance):
+        self.client.set_volume(self.config.get('denonremote', 'vol_preset_4'))
         instance.state = 'down'
 
     def set_sources(self, source=None):

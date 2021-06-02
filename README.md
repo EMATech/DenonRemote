@@ -1,13 +1,14 @@
 Denon Remote
 ============
 
-Control Denon Professional DN-500AV surround preamplifier remotely.
+Control [Denon Professional DN-500AV surround preamplifier](https://www.denonpro.com/index.php/products/view/dn-500av)
+remotely.
 
 ![Screenshot](screenshot-v0.5.0-main.png)
 
 ![Settings Screenshot](screenshot-v0.5.0-settings.png)
 
-Author: Raphael Doursenaud <rdoursenaud@gmail.com>
+Author: Raphael Doursenaud <rdoursenaud+denonremote@gmail.com>
 
 License: [GPLv3+](LICENSE)
 
@@ -60,24 +61,33 @@ Fonts used:
         - [x] Relative
         - [x] Absolute
     - [x] Mute
-    - [x] Presets! (-18dB, -24dB…)
-    - [ ] SPL calibrated display (SMPTE RP200: -18dBFS = 85dB C SPL)
+    - [x] SPL calibrated display
+        - [x] EBU/SMPTE RP200: 85dB C SPL @ -18 dBFS (Equivalent to 83 dB C SPL @ -20 dBFS)
+        - [x] K meter
+            - [x] K-20: -20dBFS = 83dB C SPL (Same as SMPTE and EBU)
+            - [x] K-14: -14dBFS = 83dB C SPL
+                - [ ] Can be compensated from SMPTE/EBU levels by lowering the output volume by 6dB
+            - [x] K-12: -12dBFS = 83dB C SPL
+                - [ ] Can be compensated from SMPTE/EBU levels by lowering the output volume by 8dB
+        - [x] EBU R 128: -23LUFS (-23dBFS) = 73dB C SPL (Debatable/unclear removed for now)
+        - [x] Presets!
+            - [x] Relative (-18dB, -24dB…)
+            - [ ] Absolute
+            - [ ] SPL calibrated
 - [ ] Input select
+    - [x] Favorites
 - [ ] Security
     - [ ] Panel Lock
     - [ ] IR Remote Lock
 - [ ] Settings backup/restore
     - [ ] All
     - [ ] Subsystems?
-
 - [x] Retrieve status
     - [x] Logger
     - [x] Update the GUI
-
-- [ ] Profiles/presets?
-
 - [ ] Import EQ settings
     - [ ] From [REW](https://www.roomeqwizard.com/) value file
+- [ ] Full Profiles/presets?
 
 ##### GUI
 
@@ -110,7 +120,7 @@ Fonts used:
     - [ ] Android
     - [ ] iOS/iPadOS
 
-#### Proxy?
+#### Proxy/background service?
 
 The receiver only allows 1 active connection. A dispatcher proxy could allow multiple simultaneous remotes (Desktop and
 mobile).

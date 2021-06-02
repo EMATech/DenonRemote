@@ -8,8 +8,8 @@ class DenonRemoteApp:
     def run(self):
         # Get from config
         # FIXME: or get from arguments
-        receiver_ip = kivy.config.Config.get('denonremote', 'receiver_ip')
-        receiver_port = kivy.config.Config.get('denonremote', 'receiver_port')
+        receiver_ip = kivy.config.get('denonremote', 'receiver_ip')
+        receiver_port = kivy.config.get('denonremote', 'receiver_port')
 
         reactor.connectTCP(receiver_ip, receiver_port, DenonClientFactory())
         reactor.run()

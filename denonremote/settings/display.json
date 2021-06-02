@@ -1,0 +1,23 @@
+[
+  {
+    "type": "numeric",
+    "title": "Reference SPL",
+    "desc": "Sets the reference Sound Pressure Level in dB SPL",
+    "section": "denonremote",
+    "key": "reference_spl"
+  },
+  {
+    "type": "numeric",
+    "title": "Reference level",
+    "desc": "Sets the reference alignment level in dBFS",
+    "section": "denonremote",
+    "key": "reference_level"
+  },
+  {
+    "type": "numeric",
+    "title": "Reference volume",
+    "desc": "Sets the reference alignment volume",
+    "section": "denonremote",
+    "key": "reference_volume"
+  }
+]
