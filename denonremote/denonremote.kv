@@ -58,13 +58,13 @@ FloatLayout:
 
                     ForcedToggleButton
                         id: mode_k20
-                        text: "K-20"
+                        text: "SMPTE/K-20"
                         group: 'mode_ref'
                         on_press: app.mode_changed(self)
 
                     ForcedToggleButton
                         id: mode_ebu
-                        text: "EBU/SMPTE"
+                        text: "EBU"
                         state: 'down'  # Default
                         group: 'mode_ref'
                         on_press: app.mode_changed(self)

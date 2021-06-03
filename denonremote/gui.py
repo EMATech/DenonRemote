@@ -78,14 +78,14 @@ class DenonRemoteApp(kivy.app.App):
             'debug': False,
             'receiver_ip': '192.168.x.y',
             'receiver_port': TELNET_PORT,
-            'reference_level': '-18',
-            'reference_spl': '85',  # SMPTE RP200:2012 & Katz metering system also equivalent to EBU 83dbSPLC@-20dBFS
-            'reference_volume': '-18',
-            'vol_preset_1': '-30.0dB',
+            'reference_level': '-20',  # SMPTE RP200:2012 & Katz metering system also equivalent to EBU 83dbSPLC@-20dBFS
+            'reference_spl': '83',
+            'reference_volume': '-18',  # The best alignment level with my current setup (Dynaudio BM5A)
+            'vol_preset_1': '-30.0dB',  # My preferred leisure level
             'vol_preset_2': '-26.0dB',  # K-12
             # -25.0dB  # EBU R 128
             'vol_preset_3': '-24.0dB',  # K-14 / Dolby Home Cinema
-            'vol_preset_4': '-18.0dB',  # SMPTE/EBU/Dolby theater
+            'vol_preset_4': '-18.0dB',  # SMPTE/EBU/Dolby theater (Reference volume)
             'fav_src_1_code': 'GAME',
             'fav_src_1_label': 'Computer HDMI',
             'fav_src_2_code': 'CD',
@@ -353,9 +353,9 @@ class DenonRemoteApp(kivy.app.App):
         level = -18  # We default to EBU
         if instance_text == 'EBU R 128':
             level = -23  # LUFS
-        elif instance_text == 'K-20':
+        elif instance_text == 'SMPTE/K-20':
             level = -20  # dBFS
-        elif instance_text == 'EBU/SMPTE':
+        elif instance_text == 'EBU':
             level = -18  # dBFS
         elif instance_text == 'K-14':
             level = -14  # dBFS
