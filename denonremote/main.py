@@ -8,7 +8,7 @@ Denon DN-500AV Remote
 """
 
 TITLE = "Denon Remote"
-__version__ = "0.6.0"  # FIXME: use setuptools
+__version__ = "0.7.0"  # FIXME: use setuptools
 __BUILD_DATE__ = "<source>"  # TODO: override at build time
 
 import argparse
@@ -18,6 +18,9 @@ import sys
 
 import PIL.Image
 import pystray
+import win32api
+import win32event
+from winerror import ERROR_ALREADY_EXISTS
 
 logger = logging.getLogger()
 
@@ -27,6 +30,7 @@ def resource_path(relative_path: str):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     if hasattr(sys, '_MEIPASS'):
         # PyInstaller creates a temp folder and stores path in _MEIPASS
+        # noinspection PyProtectedMember
         base_path = sys._MEIPASS
     else:
         base_path = os.getcwd()
@@ -146,6 +150,12 @@ def parse_args():
 
 
 if __name__ == '__main__':
+    # Make sure only one instance is running
+    # FIXME: Windows only ATM.
+    mutex = win32event.CreateMutex(None, False, TITLE)
+    if ERROR_ALREADY_EXISTS == win32api.GetLastError():
+        exit(f"{TITLE} is already running")
+
     arguments = parse_args()
     configure(arguments)
     init_logging()

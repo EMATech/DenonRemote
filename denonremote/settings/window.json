@@ -1,0 +1,9 @@
+[
+  {
+    "type": "bool",
+    "title": "Always on top",
+    "desc": "Sets the window to be on top of other windows",
+    "section": "denonremote",
+    "key": "always_on_top"
+  }
+]

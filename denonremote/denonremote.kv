@@ -60,12 +60,12 @@ FloatLayout:
                         id: mode_k20
                         text: "SMPTE/K-20"
                         group: 'mode_ref'
+                        state: 'down'  # Default
                         on_press: app.mode_changed(self)
 
                     ForcedToggleButton
                         id: mode_ebu
                         text: "EBU"
-                        state: 'down'  # Default
                         group: 'mode_ref'
                         on_press: app.mode_changed(self)
 
@@ -131,7 +131,7 @@ FloatLayout:
 
                     TextInput:
                         id: volume_display
-                        text: "---.-dB"
+                        text: "---.-dB"  # TODO: decorrelate display from serial commands (SI mandates a space before the unit)
                         font_name: 'RobotoMono-Regular'
                         font_size: 36
                         halign: 'center'

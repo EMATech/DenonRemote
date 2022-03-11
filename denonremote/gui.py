@@ -2,6 +2,8 @@
 import os
 import sys
 
+import KivyOnTop
+
 KIVY_NO_ARGS = 1
 
 import kivy.app
@@ -14,6 +16,9 @@ import kivy.uix.behaviors
 import kivy.uix.settings
 import pystray
 from kivy.clock import mainthread
+from KivyOnTop import register_topmost, unregister_topmost
+import win32gui
+import win32con
 
 # fix for pyinstaller packages app to avoid ReactorAlreadyInstalledError
 # See: https://github.com/kivy/kivy/issues/4182
@@ -37,6 +42,7 @@ APP_PATHS = ['fonts', 'images', 'settings']
 # PyInstaller data support
 for path in APP_PATHS:
     if hasattr(sys, '_MEIPASS'):
+        # noinspection PyProtectedMember
         kivy.resources.resource_add_path(os.path.join(sys._MEIPASS, path))
     else:
         kivy.resources.resource_add_path(path)
@@ -55,6 +61,9 @@ class DenonRemoteApp(kivy.app.App):
 
     connector: twisted.internet.tcp.Connector = None
     """Twisted connector"""
+
+    _backoff = 0.5
+    """Retry failed or lost connection with exponential backoff"""
 
     client: DenonClientGUIFactory = None
     """Twisted client of the receiver"""
@@ -78,6 +87,7 @@ class DenonRemoteApp(kivy.app.App):
             'debug': False,
             'receiver_ip': '192.168.x.y',
             'receiver_port': TELNET_PORT,
+            'always_on_top': True,
             'reference_level': '-20',  # SMPTE RP200:2012 & Katz metering system also equivalent to EBU 83dbSPLC@-20dBFS
             'reference_spl': '83',
             'reference_volume': '-18',  # The best alignment level with my current setup (Dynaudio BM5A)
@@ -95,18 +105,20 @@ class DenonRemoteApp(kivy.app.App):
         })
 
     def build_settings(self, settings):
+        settings.add_json_panel("Window", self.config,
+                                filename=kivy.resources.resource_find('window.json'))
         settings.add_json_panel("Communication", self.config,
-                                filename=kivy.resources.resource_find('settings/communication.json'))
+                                filename=kivy.resources.resource_find('communication.json'))
         settings.add_json_panel("Volume display", self.config,
-                                filename=kivy.resources.resource_find('settings/display.json'))
+                                filename=kivy.resources.resource_find('volume_display.json'))
         settings.add_json_panel("Volume presets", self.config,
-                                filename=kivy.resources.resource_find('settings/volume.json'))
+                                filename=kivy.resources.resource_find('volume.json'))
         settings.add_json_panel("Favorite source 1", self.config,
-                                filename=kivy.resources.resource_find('settings/source1.json'))
+                                filename=kivy.resources.resource_find('source1.json'))
         settings.add_json_panel("Favorite source 2", self.config,
-                                filename=kivy.resources.resource_find('settings/source2.json'))
+                                filename=kivy.resources.resource_find('source2.json'))
         settings.add_json_panel("Favorite source 3", self.config,
-                                filename=kivy.resources.resource_find('settings/source3.json'))
+                                filename=kivy.resources.resource_find('source3.json'))
 
     def on_config_change(self, config, section, key, value):
         if config is self.config:
@@ -141,8 +153,8 @@ class DenonRemoteApp(kivy.app.App):
         self.systray = systray
         super().run()
 
-    def _connect(self):
-        self.print_debug('Connecting to ' + self.config.get('denonremote', 'receiver_ip') + '...')
+    def _connect(self, *_):
+        self.print_debug('Connecting to ' + self.config.get('denonremote', 'receiver_ip') + '...', True)
 
         client_factory = DenonClientGUIFactory(self)
         self.connector = twisted.internet.reactor.connectTCP(
@@ -153,7 +165,7 @@ class DenonRemoteApp(kivy.app.App):
 
     def _disconnect(self):
         if self.connector is not None:
-            self.print_debug('Disconnecting')
+            self.print_debug('Disconnecting', True)
             self.connector = self.connector.disconnect()
 
     def on_start(self):
@@ -161,6 +173,18 @@ class DenonRemoteApp(kivy.app.App):
         Fired by Kivy on application startup
         :return:
         """
+        # FIXME: Windows only ATM.
+        if self.config.getboolean('denonremote', 'always_on_top'):
+            register_topmost(kivy.core.window.Window, TITLE)
+            kivy.core.window.Window.bind(on_stop=
+                                         lambda *args, w=kivy.core.window.Window, t=TITLE: unregister_topmost(w, t))
+
+        # Don’t steal focus
+        win32gui.SetWindowLong(KivyOnTop.find_hwnd(TITLE), win32con.GWL_EXSTYLE, win32con.WS_EX_NOACTIVATE)
+
+        # Raise when mouse enters
+        kivy.core.window.Window.bind(on_cursor_enter=lambda *__: kivy.core.window.Window.raise_window())
+
         if self.systray is not None:
             self.systray.visible = True
 
@@ -209,13 +233,16 @@ class DenonRemoteApp(kivy.app.App):
         :param connection:
         :return:
         """
-        self.print_debug("Connection successful!")
+        self.print_debug("Connection successful!", True)
         self.client = connection
+        self._backoff = 0.5
 
         self.client.get_power()
         self.client.get_volume()
         self.client.get_mute()
         self.client.get_source()
+
+        self.close_settings()
 
         self.root.ids.main.disabled = False
 
@@ -223,17 +250,28 @@ class DenonRemoteApp(kivy.app.App):
         if self.connector is connector:
             logger.debug("Connection failed: %s", reason)
             self.print_debug("Connection to receiver failed!")
-            # TODO: open error popup
+            self.client = None
+            # TODO: open error popup?
             self.root.ids.main.disabled = True
             self.open_settings()
+
+        self._reconnect()
 
     def on_connection_lost(self, connector, reason):
         if self.connector is connector:
             logger.debug("Connection lost: %s", reason)
             self.print_debug("Connection to receiver lost!")
-            # TODO: open error popup
-
+            self.client = None
+            # TODO: open error popup?
             self.root.ids.main.disabled = True
+
+        self._reconnect()
+
+    def _reconnect(self):
+        """Try to reconnect with exponential backoff"""
+        self._backoff = self._backoff * 2
+        self.print_debug(f"Trying to reconnect in {self._backoff} seconds.", True)
+        kivy.clock.Clock.schedule_once(self._connect, self._backoff)
 
     @mainthread
     def show(self, window=None):
@@ -275,11 +313,14 @@ class DenonRemoteApp(kivy.app.App):
         """
         logger.debug("key: %s, scancode: %s, codepoint: %s, modifier: %s", key, scancode, codepoint, modifier)
         if codepoint == 'm':
-            self.root.ids.volume_mute.trigger_action()
+            if not self.root.ids.volume_mute.disabled:
+                self.root.ids.volume_mute.trigger_action()
         if scancode == 82:  # Up
-            self.root.ids.volume_plus.trigger_action()
+            if not self.root.ids.volume_plus.disabled:
+                self.root.ids.volume_plus.trigger_action()
         if scancode == 81:  # Down
-            self.root.ids.volume_minus.trigger_action()
+            if not self.root.ids.volume_minus.disabled:
+                self.root.ids.volume_minus.trigger_action()
 
     def update_power(self, status=True):
         if status:
@@ -294,10 +335,12 @@ class DenonRemoteApp(kivy.app.App):
     def update_volume(self, text="", ref_level=None):
         # If we get no text, retrieve the currently displayed one
         if text == "":
+            # We don't need to update the volume display if no text is passed
             text = self.root.ids.volume_display.text
         else:
-            # We don't need to update the volume display if no text is passed
             self.root.ids.volume_display.text = text
+
+            # Update volume presets
             if text in self.config.get('denonremote', 'vol_preset_1'):
                 self.root.ids.vol_preset_1.state = 'down'
             else:
@@ -315,6 +358,15 @@ class DenonRemoteApp(kivy.app.App):
             else:
                 self.root.ids.vol_preset_4.state = 'normal'
 
+            # Disable buttons on boundaries
+            if text == "---.-dB":
+                self.root.ids.volume_minus.disabled = True
+            elif text == '  0.0dB':
+                self.root.ids.volume_plus.disabled = True
+            else:
+                self.root.ids.volume_minus.disabled = False
+                self.root.ids.volume_plus.disabled = False
+
         # Retrieve the displayed reference level if not passed
         if ref_level is None:
             # Get pressed option
@@ -330,17 +382,22 @@ class DenonRemoteApp(kivy.app.App):
     def _compute_spl_text(self, text="", ref_level=-18):
         # FIXME: Handle Absolute mode
         # Relative mode computation
-        volume = float(text[:-2])  # strip dB
+        volume = float('-inf') if text == '---.-dB' else float(text.replace(' ', '')[:-2])  # Strip "dB"
         volume_delta = volume - float(
             self.config.get('denonremote', 'reference_volume'))  # compute delta with reference volume
-        spl = int(round(
-            float(self.config.get('denonremote', 'reference_spl')) + volume_delta))  # apply delta to reference SPL
+        if volume == float('-inf'):
+            spl = volume
+        else:
+            spl = int(round(
+                float(self.config.get('denonremote', 'reference_spl')) + volume_delta))  # apply delta to reference SPL
         # Reference mode handling
         ref_delta = ref_level - int(
             self.config.get('denonremote', 'reference_level'))  # compute delta with reference level
         spl = spl + ref_delta
-        spl_text = "%i dB SPL" % spl  # format string with computed SPL and reference level mode
-        ref_text = "@ %i dBFS" % ref_level
+        if spl == float('-inf'):
+            spl = 0
+        spl_text = f"{spl:d} dB SPL"  # format string with computed SPL and reference level mode
+        ref_text = f"@ {ref_level:d} dBFS"
         text = (spl_text, ref_text)
         return text
 
@@ -434,5 +491,7 @@ class DenonRemoteApp(kivy.app.App):
         self.client.set_source(self.config.get('denonremote', 'fav_src_3_code'))
         instance.state = 'down'
 
-    def print_debug(self, msg):
+    def print_debug(self, msg, echo_to_logger=False):
+        if echo_to_logger:
+            logger.debug(msg)
         self.root.ids.debug_messages.text += "{}\n".format(msg)

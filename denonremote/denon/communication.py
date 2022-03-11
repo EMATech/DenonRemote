@@ -5,6 +5,7 @@ import logging
 from twisted.internet import task, reactor
 from twisted.internet.protocol import ClientFactory
 from twisted.protocols.basic import LineOnlyReceiver
+from twisted.protocols.policies import TimeoutMixin
 
 from denon.dn500av import DN500AVMessage, DN500AVFormat
 
@@ -15,12 +16,20 @@ logger = logging.getLogger(__name__)
 # See: https://twistedmatrix.com/documents/15.4.0/api/twisted.internet.serialport.SerialPort.html
 
 
-class DenonProtocol(LineOnlyReceiver):
+class DenonProtocol(LineOnlyReceiver, TimeoutMixin):
     # From DN-500 manual (DN-500AVEM_ENG_CD-ROM_v00.pdf) page 91 (97 in PDF form)
     MAX_LENGTH = 135
-    DELAY = 0.04  # in seconds. The documentation requires 200 ms. 40 ms seems safe.
+    DELAY = 0.04
+    """
+    Delay between messages in seconds.
+    The documentation requires 200 ms. 40 ms seems safe.
+    """
+    TIMEOUT = 0.2
+    """
+    Requests shall time out if no reply is received in under 200 ms.
+    """
     delimiter = b'\r'
-    ongoing_calls = 0  # Delay handling. FIXME: should timeout after 200 ms.
+    ongoing_calls = 0  # Delay handling.
 
     def connectionMade(self):
         logger.debug("Connection made")
@@ -38,14 +47,22 @@ class DenonProtocol(LineOnlyReceiver):
             # A request is made. We need to delay the next calls
             self.ongoing_calls += 1
             logger.debug("Ongoing calls for delay: %s", self.ongoing_calls)
-        delay = 0
+        delay = 0  # Send now
         if self.ongoing_calls > 0:
-            delay = self.DELAY * (self.ongoing_calls - 1)
+            delay = self.DELAY * (self.ongoing_calls - 1)  # Send after other messages
         logger.debug("Will send line: %s in %f seconds", line, delay)
         return task.deferLater(reactor, delay=delay,
-                               callable=super().sendLine, line=line)
+                               callable=self.sendLineWithTimeout, line=line)
+
+    def sendLineWithTimeout(self, line):
+        timeout = self.TIMEOUT if self.timeOut is None else self.timeOut + self.TIMEOUT
+        self.setTimeout(timeout)
+        del timeout
+        super().sendLine(line)
 
     def lineReceived(self, line):
+        self.resetTimeout()
+        self.setTimeout(None)
         if self.ongoing_calls:
             # We received a reply
             self.ongoing_calls -= 1

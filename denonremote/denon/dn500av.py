@@ -83,42 +83,46 @@ def compute_master_volume_label(value, zerodb_ref=MASTER_VOLUME_ZERODB_REF):
     """Convert Master Volume ASCII value to dB"""
     # TODO: Handle absolute values
     label = '---.-dB'
+    result = None
     if int(value[:2]) < MASTER_VOLUME_MIN or int(value[:2]) > MASTER_VOLUME_MAX:
         logger.error("Master volume value %s out of bounds (%s-%s)", value, MASTER_VOLUME_MIN, MASTER_VOLUME_MAX)
     # Quirks
-    if value == '99':
-        result = "-∞dB"
-    elif value == '995':
-        result = "-80.5dB"
     elif len(value) == 2:
-        # General case
-        result = str(float(value) - zerodb_ref)
+        if value == '99':
+            result = ""  # Minus inf
+        else:
+            # General case
+            result = str(float(value) - zerodb_ref)
     elif len(value) == 3:
         # Handle undocumented special case for half dB
 
-        # Hardcode values around 0 because of computing sign uncertainty
-        # FIXME: test '985' which seems invalid
-        if value == str((zerodb_ref - 1)) + '5':
-            result = "-0.5"
-        elif value == str(zerodb_ref) + '5':
-            result = "0.5"
+        if value == '995':
+            result = "-80.5"
         else:
-            value = int(value[:2])  # Drop the third digit
-            offset = 0
-            if value < zerodb_ref:
-                offset = 1
-            logger.debug("Add offset %i to dB calculation with value %i5", offset, value)
-            result = str(int(value + offset - zerodb_ref)) + ".5"
+
+            # Hardcode values around 0 because of computing sign uncertainty
+            if value == str((zerodb_ref - 1)) + '5':
+                result = "-0.5"
+            elif value == str(zerodb_ref) + '5':
+                result = "0.5"
+            else:
+                value = int(value[:2])  # Drop the third digit
+                offset = 0
+                if value < zerodb_ref:
+                    offset = 1
+                logger.debug("Add offset %i to dB calculation with value %i5", offset, value)
+                result = str(int(value + offset - zerodb_ref)) + ".5"
     else:
         raise ValueError
 
     # Format label with fixed width like the actual display:
     # [ NEG SIGN or EMPTY ] [ DIGIT er EMPTY ] [ DIGIT ] [ DOT ] [ DIGIT ] [ d ] [ B ]
-    label = "%s%s%s.%sdB" % (
-        result[0] if result[0] == '-' else " ",
-        " " if len(result) <= 3 or result[-4] == '-' else result[-4],
-        result[-3],
-        result[-1])
+    if result:
+        label = "%s%s%s.%sdB" % (
+            result[0] if result[0] == '-' else " ",
+            " " if len(result) <= 3 or result[-4] == '-' else result[-4],
+            result[-3],
+            result[-1])
 
     logger.debug(label)
     return label

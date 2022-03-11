@@ -4,9 +4,9 @@ Denon Remote
 Control [Denon Professional DN-500AV surround preamplifier](https://www.denonpro.com/index.php/products/view/dn-500av)
 remotely.
 
-![Screenshot](screenshot-v0.5.0-main.png)
+![Screenshot](screenshot-v0.7.0-main.png)
 
-![Settings Screenshot](screenshot-v0.5.0-settings.png)
+![Settings Screenshot](screenshot-v0.7.0-settings.png)
 
 Author: Raphael Doursenaud <rdoursenaud+denonremote@gmail.com>
 
@@ -19,17 +19,22 @@ Fonts used:
 - [Unicode Power Symbol](https://unicodepowersymbol.com/) Copyright (c) 2013 Joe Loughry licensed under MIT
 - [Free Serif](https://savannah.gnu.org/projects/freefont/) licensed under GPLv3
 
+
 ### Features
+
 
 #### Target hardware
 
 - [x] Denon Professional DN-500AV (Seems based on the same platform as the Denon AVR-1912 and AVR-2112CI.)
 - [ ] More? Contributions welcome!
 
+
 #### Communication
 
 - [x] Ethernet
-    - [x] Using [Twisted](https://twistedmatrix.com):
+    - [x] Using [Twisted](https://twistedmatrix.com)
+    - [x] connection status detection
+    - [x] automatically try to reconnect with exponential backoff
 - [ ] RS-232? also using Twisted
 - [ ] General MIDI input using [Mido](https://mido.readthedocs.io/en/latest/)
     - [ ] Define control scheme.
@@ -87,6 +92,7 @@ Fonts used:
     - [x] Update the GUI
 - [ ] Import EQ settings
     - [ ] From [REW](https://www.roomeqwizard.com/) value file
+        - [ ] Only use negative values! You can’t compensate a destructive room mode by adding energy to it.
 - [ ] Full Profiles/presets?
 
 ##### GUI
@@ -98,7 +104,11 @@ Fonts used:
         - [ ] Left/Right VolPreset +/-
         - [ ] PgUp/PgDwn SrcPreset +/-
 - [x] Systray/Taskbar support using [pystray](https://pypi.org/project/pystray/)
-- [ ] Only one instance should be allowed
+- [x] Only one instance is allowed (Microsoft Windows only)
+- [X] Option to make window stay always on top (Microsoft Windows only)
+- [x] Touch doesn’t activate the window and doesn’t steal focus (Microsoft Windows only)
+- [x] Trigger events without having to activate the window first (Microsoft Windows only)
+- [ ] Draw it on the first touch enabled display if available instead of the main one
 
 ##### Windows executable
 
@@ -161,7 +171,7 @@ PHP
 Python:
 
 - https://github.com/jeroenvds/denonremote (XBMC plugin)
-- https://github.com/Tom360V/DenonAvr (Similar objectives?
+- https://github.com/Tom360V/DenonAvr (Similar objectives?)
 - https://github.com/toebsen/python-denonavr (HTTP RESTful server)
 - https://github.com/MrJavaWolf/DenonPhoneController (Landline phone controller)
 - https://github.com/troykelly/python-denon-avr-serial-over-ip (Library)
