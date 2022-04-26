@@ -33,9 +33,11 @@ kivy.support.install_twisted_reactor()
 import twisted.internet
 from denon.communication import DenonClientGUIFactory
 
-kivy.require('2.0.0')
+kivy.require('2.1.0')
 
 logger = kivy.logger.Logger
+
+_BACKOFF = .05
 
 APP_PATHS = ['fonts', 'images', 'settings']
 
@@ -62,7 +64,7 @@ class DenonRemoteApp(kivy.app.App):
     connector: twisted.internet.tcp.Connector = None
     """Twisted connector"""
 
-    _backoff = 0.5
+    _backoff = _BACKOFF
     """Retry failed or lost connection with exponential backoff"""
 
     client: DenonClientGUIFactory = None
@@ -105,10 +107,10 @@ class DenonRemoteApp(kivy.app.App):
         })
 
     def build_settings(self, settings):
-        settings.add_json_panel("Window", self.config,
-                                filename=kivy.resources.resource_find('window.json'))
         settings.add_json_panel("Communication", self.config,
                                 filename=kivy.resources.resource_find('communication.json'))
+        settings.add_json_panel("Window", self.config,
+                                filename=kivy.resources.resource_find('window.json'))
         settings.add_json_panel("Volume display", self.config,
                                 filename=kivy.resources.resource_find('volume_display.json'))
         settings.add_json_panel("Volume presets", self.config,
@@ -168,6 +170,9 @@ class DenonRemoteApp(kivy.app.App):
             self.print_debug('Disconnecting', True)
             self.connector = self.connector.disconnect()
 
+    def on_timeout(self):
+        pass
+
     def on_start(self):
         """
         Fired by Kivy on application startup
@@ -183,7 +188,11 @@ class DenonRemoteApp(kivy.app.App):
         win32gui.SetWindowLong(KivyOnTop.find_hwnd(TITLE), win32con.GWL_EXSTYLE, win32con.WS_EX_NOACTIVATE)
 
         # Raise when mouse enters
-        kivy.core.window.Window.bind(on_cursor_enter=lambda *__: kivy.core.window.Window.raise_window())
+        kivy.core.window.Window.bind(on_cursor_enter=lambda *_: kivy.core.window.Window.raise_window())
+
+        # Custom titlebar
+        kivy.core.window.Window.custom_titlebar = True
+        kivy.core.window.Window.set_custom_titlebar(self.root.ids.header)
 
         if self.systray is not None:
             self.systray.visible = True
@@ -235,7 +244,7 @@ class DenonRemoteApp(kivy.app.App):
         """
         self.print_debug("Connection successful!", True)
         self.client = connection
-        self._backoff = 0.5
+        self._backoff = _BACKOFF
 
         self.client.get_power()
         self.client.get_volume()
@@ -248,7 +257,7 @@ class DenonRemoteApp(kivy.app.App):
 
     def on_connection_failed(self, connector, reason):
         if self.connector is connector:
-            logger.debug("Connection failed: %s", reason)
+            logger.debug(f"Connection failed: {reason}")
             self.print_debug("Connection to receiver failed!")
             self.client = None
             # TODO: open error popup?
@@ -259,10 +268,9 @@ class DenonRemoteApp(kivy.app.App):
 
     def on_connection_lost(self, connector, reason):
         if self.connector is connector:
-            logger.debug("Connection lost: %s", reason)
+            logger.debug(f"Connection lost: {reason}")
             self.print_debug("Connection to receiver lost!")
             self.client = None
-            # TODO: open error popup?
             self.root.ids.main.disabled = True
 
         self._reconnect()
@@ -290,7 +298,7 @@ class DenonRemoteApp(kivy.app.App):
         self.hidden = True
 
     def hide_on_close(self, window, source=None):
-        logger.debug("Hide from %s", source)
+        logger.debug(f"Hide from {source}")
         self.hide(window)
         return True  # Keeps the application alive instead of stopping
 
@@ -300,7 +308,7 @@ class DenonRemoteApp(kivy.app.App):
     def disable_keyboard_shortcuts(self):
         kivy.core.window.Window.unbind(on_keyboard=self.on_keyboard)
 
-    def on_keyboard(self, window, key, scancode, codepoint, modifier):
+    def on_keyboard(self, window, key, scancode=None, codepoint=None, modifier=None, **kwargs):
         """
         Handle keyboard shortcuts
 
@@ -311,7 +319,7 @@ class DenonRemoteApp(kivy.app.App):
         :param modifier:
         :return:
         """
-        logger.debug("key: %s, scancode: %s, codepoint: %s, modifier: %s", key, scancode, codepoint, modifier)
+        logger.debug(f"key: {key}, scancode: {scancode}, codepoint: {codepoint}, modifier: {modifier}")
         if codepoint == 'm':
             if not self.root.ids.volume_mute.disabled:
                 self.root.ids.volume_mute.trigger_action()
@@ -327,6 +335,15 @@ class DenonRemoteApp(kivy.app.App):
             self.root.ids.power.state = 'down'
         else:
             self.root.ids.power.state = 'normal'
+
+    def logo_pressed(self, instance):
+        self.root.small = not self.root.small
+        if self.root.small:
+            kivy.core.window.Window.size = (800, 60)
+            self.root.ids.header.pos = (0, 0)
+        else:
+            kivy.core.window.Window.size = (800, 600)
+            self.root.ids.header.pos = (0, 540)
 
     def power_pressed(self, instance):
         power = False if instance.state == 'normal' else True
@@ -361,7 +378,7 @@ class DenonRemoteApp(kivy.app.App):
             # Disable buttons on boundaries
             if text == "---.-dB":
                 self.root.ids.volume_minus.disabled = True
-            elif text == '  0.0dB':
+            elif text == '  0.0dB':  # FIXME: Should depend on MVMAX value
                 self.root.ids.volume_plus.disabled = True
             else:
                 self.root.ids.volume_minus.disabled = False

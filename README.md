@@ -58,7 +58,7 @@ Fonts used:
         - [ ] COM (Windows)
         - [ ] tty (*NIX OSes)
 - [x] On/Standby
-- [x] Volume control
+- [x] Main volume
     - [x] Get
         - [x] Relative
         - [ ] Absolute
@@ -79,6 +79,11 @@ Fonts used:
         - [x] Relative (-18dB, -24dB…)
         - [ ] Absolute
         - [ ] SPL calibrated
+- [ ] Zone 2
+- [ ] Per Channel level (Up to 7.1)
+- [ ] Tone
+- [ ] EQ
+- [ ] Sound presets
 - [ ] Input select
     - [x] Favorites
 - [ ] Security

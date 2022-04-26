@@ -6,47 +6,64 @@
     allow_no_selection: False
 
 FloatLayout:
+    small: False
 
     FloatLayout:
         id: main
         disabled: True
 
-        Image:
-            id: denon_image
-            source: 'DN-500AV.png'
-            size: (0, 50)
-            size_hint: (.25, None)
-            pos_hint: {'top': .96, 'left': 1}
-
-        Label:
-            id: name
-            text: "DENON REMOTE"
-            font_size: 50
-            bold: True
-            size: (200, 50)
+        FloatLayout:
+            id: header
+            pos: (0, 540)
             size_hint: (1, None)
-            pos_hint: {'top': .96}
-            color: [.75, .75, .75, 1]
+            size: (0, 60)
+            orientation: 'horizontal'
+            disabled: False
 
-        ToggleButton:
-            id: power
-            text: "⏻"
-            font_name: 'Unicode_IEC_symbol'
-            font_size: 50
-            size: (80, 72)
-            size_hint: (None, None)
-            pos_hint: {'top': .983, 'right': .89}
-            color: [.1, .8, .1, 1] if self.state == 'down' else [.8, .1, .1, 1]  # Green when down otherwise red
-            background_color: [.25, .25, .25, 1]
-            on_press: app.power_pressed(self)
+            Button:
+                id: denon_image
+                pos_hint: {'center_x': .1, 'center_y': .5}
+                size_hint: (None, None)
+                size: (136, 50)
+                background_normal: 'DN-500AV.png'
+                background_down: 'DN-500AV.png'
+                disabled: False
+                draggable: False
+                on_press: app.logo_pressed(self)
+
+            Label:
+                id: name
+                pos_hint: {'center_x': .5, 'center_y': .5}
+                size_hint: (None, None)
+                size: (800, 50)
+                text: "DENON REMOTE"
+                font_size: 50
+                bold: True
+                color: [.75, .75, .75, 1]
+
+            ToggleButton:
+                id: power
+                pos_hint: {'center_x': .9, 'center_y': .5}
+                size_hint: (None, None)
+                size: (75, 60)
+                text: "⏻"
+                font_name: 'Unicode_IEC_symbol'
+                font_size: 40
+                color: [.1, .8, .1, 1] if self.state == 'down' else [.8, .1, .1, 1]  # Green when down otherwise red
+                background_color: [.25, .25, .25, 1]
+                draggable: False
+                on_press: app.power_pressed(self)
 
         BoxLayout:
             id: content
             orientation: 'vertical'
+            pos: (0, 60)
+            size_hint: (1, .8)
             spacing: 15
-            size_hint: (1, .75)
-            pos: (0, 63)
-            pos_hint: {'top': .85}
+            visible: True
+            opacity: 0 if root.small else 1
+            disabled: root.small
+
 
             BoxLayout
                 id: spl_section
@@ -77,8 +94,9 @@ FloatLayout:
                         id: spl_display
                         text: "---dB SPL"
                         readonly: True
-                        font_name: 'RobotoMono-Regular'
-                        font_size: 36
+                        font_name: 'RobotoMono-Bold'
+                        font_size: 32
+                        bold: True
                         halign: 'center'
                         multiline: False
                         foreground_color: [.85, .85, .85, 1]
@@ -90,8 +108,9 @@ FloatLayout:
                         id: ref_display
                         text: "@ ---dB FS"
                         readonly: True
-                        font_name: 'RobotoMono-Regular'
+                        font_name: 'RobotoMono-Italic'
                         font_size: 24
+                        italic: True
                         halign: 'center'
                         valign: 'middle'
                         multiline: False
@@ -133,7 +152,7 @@ FloatLayout:
                         id: volume_display
                         text: "---.-dB"  # TODO: decorrelate display from serial commands (SI mandates a space before the unit)
                         font_name: 'RobotoMono-Regular'
-                        font_size: 36
+                        font_size: 32
                         halign: 'center'
                         multiline: False
                         foreground_color: [.85, .85, .85, 1]
@@ -210,18 +229,21 @@ FloatLayout:
 
     FloatLayout:
         id: footer
+        pos: (0, 0)
+        size_hint: (1, .1)
+        size: (1, 80)
         disabled: False
-        size: (1, 60)
-        size_hint: (1, None)
+        opacity: 0 if root.small else 1
+        disabled: root.small
 
         Button:
             id: settings
+            pos_hint: {'center_y': .5}
+            size_hint: (.25, None)
+            size: (60, 60)
             text: "⚙"
             font_name: 'FreeSerif'
             font_size: 50
-            size: (80, 60)
-            size_hint: (.25, None)
-            pos_hint: {'bottom': 1}
             background_color: [0, 0, 0, 1]
             disabled: False
             on_press: app.open_settings(self)
@@ -229,9 +251,9 @@ FloatLayout:
         BoxLayout:
             id: brand_layout
             orientation: 'vertical'
-            size: (200, 60)
+            pos_hint: {'center_y': .5}
             size_hint: (1, None)
-            pos_hint: {'bottom': 1}
+            size: (200, 60)
 
             Label:
                 id: brand_label
@@ -239,20 +261,20 @@ FloatLayout:
 
             Label:
                 id: copyright_label
-                text: "(c) 2021 Raphaël Doursenaud"
+                text: "(c) 2021-2022 Raphaël Doursenaud"
                 font_size: 12
 
             Label:
                 id: version_label
-                text: "v%s %s (Built on %s)" % (VERSION, system(), BUILD_DATE)
+                text: f"v{VERSION} {system()} (Built on {BUILD_DATE})"
                 font_size: 10
 
         TextInput:
             id: debug_messages
+            pos_hint: {'right': 1, 'center_y': .3}
+            size_hint: (.333, None)
+            size: (200, 80)
             text: "Initializing GUI...\n"
             readonly: True
             background_color: [0, 0, 0, 1]
             foreground_color: [0, 1, 0, 1]
-            size: (200, 60)
-            size_hint: (.333, None)
-            pos_hint: {'bottom': 1, 'right': 1}

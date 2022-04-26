@@ -25,36 +25,6 @@ from winerror import ERROR_ALREADY_EXISTS
 logger = logging.getLogger()
 
 
-# FIXME: use kivy.resources.resource_find instead
-def resource_path(relative_path: str):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    if hasattr(sys, '_MEIPASS'):
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        # noinspection PyProtectedMember
-        base_path = sys._MEIPASS
-    else:
-        base_path = os.getcwd()
-
-    return os.path.join(base_path, relative_path)
-
-
-def run_gui(systray: pystray.Icon = None):
-    from gui import DenonRemoteApp
-    if systray is not None:
-        DenonRemoteApp().run_with_systray(systray)
-    else:
-        DenonRemoteApp().run()
-
-
-def run_gui_from_systray():
-    default_menu_item = pystray.MenuItem(TITLE, systray_clicked, default=True, visible=False)
-    quit_menu_item = pystray.MenuItem('Quit', quit_systray)
-    systray_menu = pystray.Menu(default_menu_item, quit_menu_item)
-    systray = pystray.Icon(TITLE, menu=systray_menu)
-    systray.icon = PIL.Image.open(resource_path(r'images/icon.png'))
-    systray.run(setup=run_gui)
-
-
 def configure(args: argparse.Namespace):
     import kivy.config
 
@@ -66,7 +36,10 @@ def configure(args: argparse.Namespace):
     kivy.config.Config.adddefaultsection('denonremote')
 
     # Fixed size window
-    kivy.config.Config.set('graphics', 'resizable', False)
+    kivy.config.Config.set('graphics', 'resizable', '0')
+
+    # No titlebar
+    kivy.config.Config.set('graphics', 'borderless', '1')
 
     # wm_pen and wm_touch conflicts with hidden window state. See https://github.com/kivy/kivy/issues/6428
     kivy.config.Config.remove_option('input', 'wm_pen')
@@ -79,7 +52,8 @@ def configure(args: argparse.Namespace):
     if args.no_systray:
         kivy.config.Config.set('graphics', 'window_state', 'visible')
     else:
-        kivy.config.Config.set('graphics', 'window_state', 'hidden')
+        # FIXME: should be `hidden` but can't because of https://github.com/kivy/kivy/issues/7874
+        kivy.config.Config.set('graphics', 'window_state', 'visible')
 
     if args.debug:
         kivy.config.Config.set('kivy', 'log_level', 'debug')
@@ -88,7 +62,10 @@ def configure(args: argparse.Namespace):
         kivy.config.Config.set('kivy', 'log_level', 'warning')
         kivy.config.Config.set('denonremote', 'debug', '0')
 
-    kivy.config.Config.write()
+    try:
+        kivy.config.Config.write()
+    except PermissionError:
+        logger.error("Unable to save config!")
 
 
 def init_logging():
@@ -108,6 +85,19 @@ def init_logging():
     logging.getLogger('denon.dn500av').setLevel(log_level)  # Sync module’s logging level
 
 
+def run_cli():
+    from cli import DenonRemoteApp
+    DenonRemoteApp().run()
+
+
+def run_gui(systray: pystray.Icon = None):
+    import gui
+    if systray is not None:
+        gui.DenonRemoteApp().run_with_systray(systray)
+    else:
+        gui.DenonRemoteApp().run()
+
+
 def systray_clicked(icon: pystray.Icon, menu: pystray.MenuItem):
     import kivy.app
     app = kivy.app.App.get_running_app()
@@ -123,9 +113,26 @@ def quit_systray(icon: pystray.Icon, menu: pystray.MenuItem):
     icon.stop()
 
 
-def run_cli():
-    from cli import DenonRemoteApp
-    DenonRemoteApp().run()
+# FIXME: use kivy.resources.resource_find instead
+def resource_path(relative_path: str):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    if hasattr(sys, '_MEIPASS'):
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        # noinspection PyProtectedMember
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.getcwd()
+
+    return os.path.join(base_path, relative_path)
+
+
+def run_gui_from_systray():
+    default_menu_item = pystray.MenuItem(TITLE, systray_clicked, default=True, visible=True)
+    quit_menu_item = pystray.MenuItem('Quit', quit_systray)
+    systray_menu = pystray.Menu(default_menu_item, quit_menu_item)
+    systray = pystray.Icon(TITLE, menu=systray_menu)
+    systray.icon = PIL.Image.open(resource_path(r'images/icon.png'))
+    systray.run(setup=run_gui)
 
 
 def run(args: argparse.Namespace):

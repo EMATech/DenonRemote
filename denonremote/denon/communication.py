@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class DenonProtocol(LineOnlyReceiver, TimeoutMixin):
     # From DN-500 manual (DN-500AVEM_ENG_CD-ROM_v00.pdf) page 91 (97 in PDF form)
     MAX_LENGTH = 135
-    DELAY = 0.04
+    DELAY = 0.2
     """
     Delay between messages in seconds.
     The documentation requires 200 ms. 40 ms seems safe.
@@ -46,11 +46,11 @@ class DenonProtocol(LineOnlyReceiver, TimeoutMixin):
         if b'?' in line:
             # A request is made. We need to delay the next calls
             self.ongoing_calls += 1
-            logger.debug("Ongoing calls for delay: %s", self.ongoing_calls)
+            logger.debug(f"Ongoing calls for delay: {self.ongoing_calls}")
         delay = 0  # Send now
         if self.ongoing_calls > 0:
             delay = self.DELAY * (self.ongoing_calls - 1)  # Send after other messages
-        logger.debug("Will send line: %s in %f seconds", line, delay)
+        logger.debug(f"Will send line: {line} in {delay} seconds")
         return task.deferLater(reactor, delay=delay,
                                callable=self.sendLineWithTimeout, line=line)
 
@@ -66,10 +66,10 @@ class DenonProtocol(LineOnlyReceiver, TimeoutMixin):
         if self.ongoing_calls:
             # We received a reply
             self.ongoing_calls -= 1
-            logger.debug("Ongoing calls for delay: %s", self.ongoing_calls)
+            logger.debug(f"Ongoing calls for delay: {self.ongoing_calls}")
         receiver = DN500AVMessage()
         receiver.parse_response(line)
-        logger.info("Received line: %s", receiver.response)
+        logger.info(f"Received line: {receiver.response}")
 
         # FIXME: parse message into state
 
@@ -117,7 +117,7 @@ class DenonProtocol(LineOnlyReceiver, TimeoutMixin):
     def set_volume(self, value):
         rawvalue = DN500AVFormat().mv_reverse_params.get(value)
         if rawvalue is None:
-            logger.warning("Set volume value %s is invalid.", value)
+            logger.warning(f"Set volume value {value} is invalid.")
         else:
             message = 'MV' + rawvalue
             self.sendLine(message.encode('ASCII'))
