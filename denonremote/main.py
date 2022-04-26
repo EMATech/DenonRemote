@@ -107,9 +107,19 @@ def systray_clicked(icon: pystray.Icon, menu: pystray.MenuItem):
         app.hide()
 
 
-def quit_systray(icon: pystray.Icon, menu: pystray.MenuItem):
+def systray_settings(icon: pystray.Icon, menu: pystray.MenuItem):
     import kivy.app
-    kivy.app.App.get_running_app().stop()
+    app = kivy.app.App.get_running_app()
+    if app.hidden:
+        app.show()
+
+    import kivy.clock
+    kivy.clock.Clock.schedule_once(kivy.app.App.get_running_app().open_settings)
+
+
+def systray_quit(icon: pystray.Icon, menu: pystray.MenuItem):
+    import kivy.clock
+    kivy.clock.Clock.schedule_once(kivy.app.App.get_running_app().stop)
     icon.stop()
 
 
@@ -128,8 +138,9 @@ def resource_path(relative_path: str):
 
 def run_gui_from_systray():
     default_menu_item = pystray.MenuItem(TITLE, systray_clicked, default=True, visible=True)
-    quit_menu_item = pystray.MenuItem('Quit', quit_systray)
-    systray_menu = pystray.Menu(default_menu_item, quit_menu_item)
+    settings_menu_item = pystray.MenuItem('Settings', systray_settings)
+    quit_menu_item = pystray.MenuItem('Quit', systray_quit)
+    systray_menu = pystray.Menu(default_menu_item, settings_menu_item, quit_menu_item)
     systray = pystray.Icon(TITLE, menu=systray_menu)
     systray.icon = PIL.Image.open(resource_path(r'images/icon.png'))
     systray.run(setup=run_gui)
@@ -161,7 +172,7 @@ if __name__ == '__main__':
     # FIXME: Windows only ATM.
     mutex = win32event.CreateMutex(None, False, TITLE)
     if ERROR_ALREADY_EXISTS == win32api.GetLastError():
-        exit(f"{TITLE} is already running")
+        sys.exit(f"{TITLE} is already running")
 
     arguments = parse_args()
     configure(arguments)
