@@ -8,7 +8,7 @@ Denon DN-500AV Remote
 """
 
 TITLE = "Denon Remote"
-__version__ = "0.7.0"  # FIXME: use setuptools
+__version__ = "0.8.0"  # FIXME: use setuptools
 __BUILD_DATE__ = "<source>"  # TODO: override at build time
 
 import argparse
