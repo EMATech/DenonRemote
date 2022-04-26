@@ -18,6 +18,7 @@ Fonts used:
 
 - [Unicode Power Symbol](https://unicodepowersymbol.com/) Copyright (c) 2013 Joe Loughry licensed under MIT
 - [Free Serif](https://savannah.gnu.org/projects/freefont/) licensed under GPLv3
+- [Roboto](https://fonts.google.com/specimen/Roboto) Copyright Christian Robertson licensed under Apache 2.0
 
 
 ### Features
