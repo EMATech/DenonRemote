@@ -1,53 +1,88 @@
-# -*- coding: utf-8 -*-
+# This Python file uses the following encoding: utf-8
+#
+# SPDX-FileCopyrightText: 2021-2022 Raphaël Doursenaud <rdoursenaud@free.fr>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+"""
+Denon Remote GUI.
+"""
+
 import os
 import sys
 
-import KivyOnTop
+# Don't pass CLI arguments to Kivy.
+# Must be set before importing Kivy.
+os.environ['KIVY_NO_ARGS'] = '1'
 
-KIVY_NO_ARGS = 1
-
+import configparser
 import kivy.app
+import kivy.clock
 import kivy.core
 import kivy.core.window
 import kivy.logger
 import kivy.resources
-import kivy.support
 import kivy.uix.behaviors
 import kivy.uix.settings
+import kivy.uix.widget
+import KivyOnTop
 import pystray
-from kivy.clock import mainthread
-from KivyOnTop import register_topmost, unregister_topmost
 import win32gui
 import win32con
 
-# fix for pyinstaller packages app to avoid ReactorAlreadyInstalledError
-# See: https://github.com/kivy/kivy/issues/4182
-# See: https://github.com/pyinstaller/pyinstaller/issues/3390
-from main import TITLE
-
-if 'twisted.internet.reactor' in sys.modules:
-    del sys.modules['twisted.internet.reactor']
-
 # Must be called before importing or using the reactor
-kivy.support.install_twisted_reactor()
+from kivy.support import install_twisted_reactor
+
+install_twisted_reactor()
 import twisted.internet
-from denon.communication import DenonClientGUIFactory
+import twisted.internet.tcp
+import twisted.python.failure
+
+from denonremote.__about__ import __TITLE__
+from denonremote.denon.communication import DenonClientGUIFactory
+from kivy.animation import Animation
+from kivy.uix.togglebutton import ToggleButton
+from telnetlib import TELNET_PORT
 
 kivy.require('2.1.0')
 
 logger = kivy.logger.Logger
 
-_BACKOFF = .05
-
-APP_PATHS = ['fonts', 'images', 'settings']
-
 # PyInstaller data support
-for path in APP_PATHS:
+for path in ['fonts', 'images', 'settings']:
     if hasattr(sys, '_MEIPASS'):
         # noinspection PyProtectedMember
         kivy.resources.resource_add_path(os.path.join(sys._MEIPASS, path))
     else:
         kivy.resources.resource_add_path(path)
+
+_BACKOFF = .05
+
+WIDTH = 800
+HEIGHT = 600
+SMALL_HEIGHT = 60
+
+
+class PowerButton(ToggleButton):
+    """
+    Power button
+
+    With blink animation.
+    """
+    speed = 1  # seconds
+
+    def __init__(self, **kwargs):
+        self.anim = Animation(opacity=0, duration=self.speed, t='in_out_cubic')
+        self.anim += Animation(opacity=1, duration=self.speed, t='in_out_cubic')
+        self.anim.repeat = True
+        super().__init__(**kwargs)
+
+    def blink(self, start=True):
+        if start:
+            self.anim.start(self)
+        else:
+            self.anim.stop(self)
+            self.opacity = 1
 
 
 class DenonRemoteApp(kivy.app.App):
@@ -55,36 +90,31 @@ class DenonRemoteApp(kivy.app.App):
     A remote for the Denon DN-500AV Receiver
     """
 
-    title: str = TITLE
+    title: str = __TITLE__
     """Application title"""
 
     icon: str = 'icon.png'
     """Application icon"""
 
-    connector: twisted.internet.tcp.Connector = None
+    connector: None | twisted.internet.tcp.Connector = None
     """Twisted connector"""
 
-    _backoff = _BACKOFF
+    _backoff: float = _BACKOFF
     """Retry failed or lost connection with exponential backoff"""
 
-    client: DenonClientGUIFactory = None
+    client: None | DenonClientGUIFactory = None
     """Twisted client of the receiver"""
 
-    systray: pystray.Icon = None
+    systray: None | pystray.Icon = None
 
-    hidden: bool = True if kivy.config.Config.get('graphics', 'window_state') == 'hidden' else False
+    hidden: bool = bool(kivy.config.Config.get('graphics', 'window_state') == 'hidden')
 
     settings_cls: kivy.uix.settings.Settings = kivy.uix.settings.SettingsWithSidebar
 
-    def get_application_config(self, **kwargs):
-        """
-        Store config into user directory
-        """
-        return super().get_application_config('~/.%(appname)s.ini')
+    maximum_volume = '  0.0dB'
 
-    def build_config(self, config):
+    def build_config(self, config: configparser.ConfigParser) -> None:
         config.adddefaultsection('denonremote')
-        from telnetlib import TELNET_PORT
         config.setdefaults('denonremote', {
             'debug': False,
             'receiver_ip': '192.168.x.y',
@@ -99,14 +129,20 @@ class DenonRemoteApp(kivy.app.App):
             'vol_preset_3': '-24.0dB',  # K-14 / Dolby Home Cinema
             'vol_preset_4': '-18.0dB',  # SMPTE/EBU/Dolby theater (Reference volume)
             'fav_src_1_code': 'GAME',
-            'fav_src_1_label': 'Computer HDMI',
+            'fav_src_1_label': "Computer HDMI",
             'fav_src_2_code': 'CD',
-            'fav_src_2_label': 'Pro Analog',
+            'fav_src_2_label': "Pro Analog",
             'fav_src_3_code': 'TV',
-            'fav_src_3_label': 'Pro Digital'
+            'fav_src_3_label': "Pro Digital",
+            'fav_src_4_code': '',
+            'fav_src_4_label': "",
+            'fav_src_5_code': '',
+            'fav_src_5_label': "",
+            'fav_src_6_code': '',
+            'fav_src_6_label': "",
         })
 
-    def build_settings(self, settings):
+    def build_settings(self, settings: kivy.uix.settings.Settings) -> None:
         settings.add_json_panel("Communication", self.config,
                                 filename=kivy.resources.resource_find('communication.json'))
         settings.add_json_panel("Window", self.config,
@@ -121,8 +157,20 @@ class DenonRemoteApp(kivy.app.App):
                                 filename=kivy.resources.resource_find('source2.json'))
         settings.add_json_panel("Favorite source 3", self.config,
                                 filename=kivy.resources.resource_find('source3.json'))
+        settings.add_json_panel("Favorite source 4", self.config,
+                                filename=kivy.resources.resource_find('source4.json'))
+        settings.add_json_panel("Favorite source 5", self.config,
+                                filename=kivy.resources.resource_find('source5.json'))
+        settings.add_json_panel("Favorite source 6", self.config,
+                                filename=kivy.resources.resource_find('source6.json'))
 
-    def on_config_change(self, config, section, key, value):
+    def get_application_config(self, _: str = '%(appdir)s/%(appname)s.ini') -> None:
+        """
+        Store config into user directory
+        """
+        return super().get_application_config('~/.%(appname)s.ini')
+
+    def on_config_change(self, config: configparser.ConfigParser, section: str, key: str, value: str) -> None:
         if config is self.config:
             if section == 'denonremote':
                 if key == 'receiver_ip':
@@ -142,20 +190,26 @@ class DenonRemoteApp(kivy.app.App):
                     self.root.ids.fav_src_2.text = value
                 if key == 'fav_src_3_label':
                     self.root.ids.fav_src_3.text = value
+                if key == 'fav_src_4_label':
+                    self.root.ids.fav_src_4.text = value
+                if key == 'fav_src_5_label':
+                    self.root.ids.fav_src_5.text = value
+                if key == 'fav_src_6_label':
+                    self.root.ids.fav_src_6.text = value
 
-    def open_settings(self, *largs):
+    def open_settings(self, *_) -> None:
         self.disable_keyboard_shortcuts()
         super().open_settings()
 
-    def close_settings(self, *largs):
+    def close_settings(self, *_) -> None:
         self.enable_keyboard_shortcuts()
         super().close_settings()
 
-    def run_with_systray(self, systray):
+    def run_with_systray(self, systray: pystray.Icon) -> None:
         self.systray = systray
         super().run()
 
-    def _connect(self, *_):
+    def _connect(self, *_) -> None:
         self.print_debug('Connecting to ' + self.config.get('denonremote', 'receiver_ip') + '...', True)
 
         client_factory = DenonClientGUIFactory(self)
@@ -165,27 +219,32 @@ class DenonRemoteApp(kivy.app.App):
             factory=client_factory,
             timeout=1)
 
-    def _disconnect(self):
+    def _disconnect(self) -> None:
         if self.connector is not None:
             self.print_debug('Disconnecting', True)
-            self.connector = self.connector.disconnect()
+            self.connector.disconnect()
+            self.connector = None
 
-    def on_timeout(self):
+    def on_timeout(self) -> None:
         pass
 
-    def on_start(self):
+    def on_start(self) -> None:
         """
         Fired by Kivy on application startup
         :return:
         """
+
+        print(self.root)
+
         # FIXME: Windows only ATM.
         if self.config.getboolean('denonremote', 'always_on_top'):
-            register_topmost(kivy.core.window.Window, TITLE)
+            KivyOnTop.register_topmost(kivy.core.window.Window, __TITLE__)
             kivy.core.window.Window.bind(on_stop=
-                                         lambda *args, w=kivy.core.window.Window, t=TITLE: unregister_topmost(w, t))
+                                         lambda *args, w=kivy.core.window.Window,
+                                                t=__TITLE__: KivyOnTop.unregister_topmost(w, t))
 
         # Don’t steal focus
-        win32gui.SetWindowLong(KivyOnTop.find_hwnd(TITLE), win32con.GWL_EXSTYLE, win32con.WS_EX_NOACTIVATE)
+        win32gui.SetWindowLong(KivyOnTop.find_hwnd(__TITLE__), win32con.GWL_EXSTYLE, win32con.WS_EX_NOACTIVATE)
 
         # Raise when mouse enters
         kivy.core.window.Window.bind(on_cursor_enter=lambda *_: kivy.core.window.Window.raise_window())
@@ -205,13 +264,14 @@ class DenonRemoteApp(kivy.app.App):
 
         if not self.config.getboolean('denonremote', 'debug'):
             # Hide debug_messages
-            self.root.ids.debug_messages.size = (0, 0)
+            self.root.ids.debug_messages.opacity = 0
+            self.root.ids.debug_messages.disabled = True
             # Hide Kivy settings
             self.use_kivy_settings: bool = False
 
         self._connect()
 
-    def on_stop(self):
+    def on_stop(self) -> None:
         """
         Fired by Kivy on application shutdown
 
@@ -219,7 +279,7 @@ class DenonRemoteApp(kivy.app.App):
         """
         pass
 
-    def on_pause(self):
+    def on_pause(self) -> None:
         """
         Fired by Kivy on application pause
 
@@ -227,7 +287,7 @@ class DenonRemoteApp(kivy.app.App):
         """
         pass
 
-    def on_resume(self):
+    def on_resume(self) -> None:
         """
         Fired by Kivy on application resume after pause
 
@@ -235,7 +295,7 @@ class DenonRemoteApp(kivy.app.App):
         """
         pass
 
-    def on_connection(self, connection):
+    def on_connection(self, connection: DenonClientGUIFactory) -> None:
         """
         Fired by the Twisted client when the reactor is connected
 
@@ -253,36 +313,41 @@ class DenonRemoteApp(kivy.app.App):
 
         self.close_settings()
 
+        self.root.ids.power.disabled = False
         self.root.ids.main.disabled = False
 
-    def on_connection_failed(self, connector, reason):
+    def on_connection_failed(self, connector: twisted.internet.tcp.Connector, reason: twisted.python.failure.Failure
+                             ) -> None:
         if self.connector is connector:
             logger.debug(f"Connection failed: {reason}")
             self.print_debug("Connection to receiver failed!")
             self.client = None
             # TODO: open error popup?
+            self.root.ids.power.disabled = True
             self.root.ids.main.disabled = True
             self.open_settings()
 
         self._reconnect()
 
-    def on_connection_lost(self, connector, reason):
+    def on_connection_lost(self, connector: twisted.internet.tcp.Connector, reason: twisted.python.failure.Failure
+                           ) -> None:
         if self.connector is connector:
             logger.debug(f"Connection lost: {reason}")
             self.print_debug("Connection to receiver lost!")
             self.client = None
+            self.root.ids.power.disabled = True
             self.root.ids.main.disabled = True
 
         self._reconnect()
 
-    def _reconnect(self):
+    def _reconnect(self) -> None:
         """Try to reconnect with exponential backoff"""
         self._backoff = self._backoff * 2
         self.print_debug(f"Trying to reconnect in {self._backoff} seconds.", True)
         kivy.clock.Clock.schedule_once(self._connect, self._backoff)
 
-    @mainthread
-    def show(self, window=None):
+    @kivy.clock.mainthread
+    def show(self, window: kivy.core.window.Window = None) -> None:
         if window is None:
             window = self.root_window
         window.restore()
@@ -290,34 +355,28 @@ class DenonRemoteApp(kivy.app.App):
         window.raise_window()
         self.hidden = False
 
-    @mainthread
-    def hide(self, window=None):
+    @kivy.clock.mainthread
+    def hide(self, window: kivy.core.window.Window = None) -> None:
         if window is None:
             window = self.root_window
         window.hide()
         self.hidden = True
 
-    def hide_on_close(self, window, source=None):
+    def hide_on_close(self, window: kivy.core.window.Window, source: str = None) -> True:
         logger.debug(f"Hide from {source}")
         self.hide(window)
         return True  # Keeps the application alive instead of stopping
 
-    def enable_keyboard_shortcuts(self):
+    def enable_keyboard_shortcuts(self) -> None:
         kivy.core.window.Window.bind(on_keyboard=self.on_keyboard)
 
-    def disable_keyboard_shortcuts(self):
+    def disable_keyboard_shortcuts(self) -> None:
         kivy.core.window.Window.unbind(on_keyboard=self.on_keyboard)
 
-    def on_keyboard(self, window, key, scancode=None, codepoint=None, modifier=None, **kwargs):
+    def on_keyboard(self, _: kivy.core.window.Window,
+                    key: str, scancode: int = None, codepoint: str = None, modifier: str = None, **__) -> None:
         """
         Handle keyboard shortcuts
-
-        :param window:
-        :param key:
-        :param scancode:
-        :param codepoint:
-        :param modifier:
-        :return:
         """
         logger.debug(f"key: {key}, scancode: {scancode}, codepoint: {codepoint}, modifier: {modifier}")
         if codepoint == 'm':
@@ -330,32 +389,37 @@ class DenonRemoteApp(kivy.app.App):
             if not self.root.ids.volume_minus.disabled:
                 self.root.ids.volume_minus.trigger_action()
 
-    def update_power(self, status=True):
+    def logo_pressed(self, _: kivy.uix.widget.Widget) -> None:
+        self.root.small = not self.root.small
+        if self.root.small:
+            kivy.core.window.Window.size = (WIDTH, SMALL_HEIGHT)
+        else:
+            kivy.core.window.Window.size = (WIDTH, HEIGHT)
+
+    def update_power(self, status: bool = True) -> None:
         if status:
             self.root.ids.power.state = 'down'
         else:
             self.root.ids.power.state = 'normal'
 
-    def logo_pressed(self, instance):
-        self.root.small = not self.root.small
-        if self.root.small:
-            kivy.core.window.Window.size = (800, 60)
-            self.root.ids.header.pos = (0, 0)
-        else:
-            kivy.core.window.Window.size = (800, 600)
-            self.root.ids.header.pos = (0, 540)
-
-    def power_pressed(self, instance):
-        power = False if instance.state == 'normal' else True
+    def power_pressed(self, instance: kivy.uix.widget.Widget) -> None:
+        power = not bool(instance.state == 'normal')
         self.client.set_power(power)
 
-    def update_volume(self, text="", ref_level=None):
+    def update_volume(self, text: str = "", ref_level: int = None) -> None:
         # If we get no text, retrieve the currently displayed one
         if text == "":
             # We don't need to update the volume display if no text is passed
             text = self.root.ids.volume_display.text
         else:
             self.root.ids.volume_display.text = text
+
+            # Disable minus button on boundaries
+            # Plus button is handled by update_max_volume()
+            if text == "---.-dB":
+                self.root.ids.volume_minus.disabled = True
+            else:
+                self.root.ids.volume_minus.disabled = False
 
             # Update volume presets
             if text in self.config.get('denonremote', 'vol_preset_1'):
@@ -375,15 +439,6 @@ class DenonRemoteApp(kivy.app.App):
             else:
                 self.root.ids.vol_preset_4.state = 'normal'
 
-            # Disable buttons on boundaries
-            if text == "---.-dB":
-                self.root.ids.volume_minus.disabled = True
-            elif text == '  0.0dB':  # FIXME: Should depend on MVMAX value
-                self.root.ids.volume_plus.disabled = True
-            else:
-                self.root.ids.volume_minus.disabled = False
-                self.root.ids.volume_plus.disabled = False
-
         # Retrieve the displayed reference level if not passed
         if ref_level is None:
             # Get pressed option
@@ -396,7 +451,18 @@ class DenonRemoteApp(kivy.app.App):
         self.root.ids.spl_display.text = spl_text
         self.root.ids.ref_display.text = ref_text
 
-    def _compute_spl_text(self, text="", ref_level=-18):
+    def update_max_volume(self, text: str = ""):
+        if text:
+            self.maximum_volume = text
+
+        # Disable plus button on boundaries
+        # Minus button is handled by update_volume
+        if self.root.ids.volume_display.text == self.maximum_volume:
+            self.root.ids.volume_plus.disabled = True
+        else:
+            self.root.ids.volume_plus.disabled = False
+
+    def _compute_spl_text(self, text: str = "", ref_level: int = -18) -> (str, str):
         # FIXME: Handle Absolute mode
         # Relative mode computation
         volume = float('-inf') if text == '---.-dB' else float(text.replace(' ', '')[:-2])  # Strip "dB"
@@ -418,12 +484,12 @@ class DenonRemoteApp(kivy.app.App):
         text = (spl_text, ref_text)
         return text
 
-    def mode_changed(self, instance):
+    def mode_changed(self, instance: kivy.uix.widget.Widget) -> None:
         level = self._get_mode_level(instance.text)
         self.update_volume(ref_level=level)
 
     @staticmethod
-    def _get_mode_level(instance_text):
+    def _get_mode_level(instance_text: str) -> int:
         level = -18  # We default to EBU
         if instance_text == 'EBU R 128':
             level = -23  # LUFS
@@ -437,50 +503,52 @@ class DenonRemoteApp(kivy.app.App):
             level = -12  # dBFS
         return level
 
-    def volume_text_changed(self, instance):
+    def volume_text_changed(self, instance: kivy.uix.widget.Widget) -> None:
         # TODO: validate user input
         if len(instance.text) != 7:
             self.client.get_volume()
             return
         self.client.set_volume(instance.text)
 
-    def volume_minus_pressed(self, instance):
+    def volume_minus_pressed(self, _: kivy.uix.widget.Widget) -> None:
         self.client.set_volume('Down')
 
-    def volume_plus_pressed(self, instance):
+    def volume_plus_pressed(self, _: kivy.uix.widget.Widget) -> None:
         self.client.set_volume('Up')
 
-    def volume_mute_pressed(self, instance):
-        mute = True if instance.state == 'down' else False
+    def volume_mute_pressed(self, instance: kivy.uix.widget.Widget) -> None:
+        mute = bool(instance.state == 'down')
         # Stay down. Updated on message received
         self.root.ids.volume_mute.state = 'down'
         self.client.set_mute(mute)
 
-    def set_volume_mute(self, status=False):
+    def set_volume_mute(self, status: bool = False) -> None:
         if status:
             self.root.ids.volume_mute.state = 'down'
             self.root.ids.volume_display.foreground_color = [.3, .3, .3, 1]
+            self.root.ids.power.blink(True)
         else:
             self.root.ids.volume_mute.state = 'normal'
             self.root.ids.volume_display.foreground_color = [.85, .85, .85, 1]
+            self.root.ids.power.blink(False)
 
-    def vol_preset_1_pressed(self, instance):
+    def vol_preset_1_pressed(self, instance: kivy.uix.widget.Widget) -> None:
         self.client.set_volume(self.config.get('denonremote', 'vol_preset_1'))
         instance.state = 'down'  # Disallow depressing the button manually
 
-    def vol_preset_2_pressed(self, instance):
+    def vol_preset_2_pressed(self, instance: kivy.uix.widget.Widget) -> None:
         self.client.set_volume(self.config.get('denonremote', 'vol_preset_2'))
         instance.state = 'down'
 
-    def vol_preset_3_pressed(self, instance):
+    def vol_preset_3_pressed(self, instance: kivy.uix.widget.Widget) -> None:
         self.client.set_volume(self.config.get('denonremote', 'vol_preset_3'))
         instance.state = 'down'
 
-    def vol_preset_4_pressed(self, instance):
+    def vol_preset_4_pressed(self, instance: kivy.uix.widget.Widget) -> None:
         self.client.set_volume(self.config.get('denonremote', 'vol_preset_4'))
         instance.state = 'down'
 
-    def set_sources(self, source=None):
+    def set_sources(self, source: str = None) -> None:
         if source in self.config.get('denonremote', 'fav_src_1_code'):
             self.root.ids.fav_src_1.state = 'down'
         else:
@@ -493,22 +561,44 @@ class DenonRemoteApp(kivy.app.App):
             self.root.ids.fav_src_3.state = 'down'
         else:
             self.root.ids.fav_src_3.state = 'normal'
+        if source in self.config.get('denonremote', 'fav_src_4_code'):
+            self.root.ids.fav_src_4.state = 'down'
+        else:
+            self.root.ids.fav_src_4.state = 'normal'
+        if source in self.config.get('denonremote', 'fav_src_5_code'):
+            self.root.ids.fav_src_5.state = 'down'
+        else:
+            self.root.ids.fav_src_5.state = 'normal'
+        if source in self.config.get('denonremote', 'fav_src_6_code'):
+            self.root.ids.fav_src_6.state = 'down'
+        else:
+            self.root.ids.fav_src_6.state = 'normal'
 
-        # TODO: display other sources
-
-    def fav_src_1_pressed(self, instance):
+    def fav_src_1_pressed(self, instance: kivy.uix.widget.Widget) -> None:
         self.client.set_source(self.config.get('denonremote', 'fav_src_1_code'))
         instance.state = 'down'  # Disallow depressing the button manually
 
-    def fav_src_2_pressed(self, instance):
+    def fav_src_2_pressed(self, instance: kivy.uix.widget.Widget) -> None:
         self.client.set_source(self.config.get('denonremote', 'fav_src_2_code'))
         instance.state = 'down'
 
-    def fav_src_3_pressed(self, instance):
+    def fav_src_3_pressed(self, instance: kivy.uix.widget.Widget) -> None:
         self.client.set_source(self.config.get('denonremote', 'fav_src_3_code'))
         instance.state = 'down'
 
-    def print_debug(self, msg, echo_to_logger=False):
+    def fav_src_4_pressed(self, instance: kivy.uix.widget.Widget) -> None:
+        self.client.set_source(self.config.get('denonremote', 'fav_src_4_code'))
+        instance.state = 'down'
+
+    def fav_src_5_pressed(self, instance: kivy.uix.widget.Widget) -> None:
+        self.client.set_source(self.config.get('denonremote', 'fav_src_5_code'))
+        instance.state = 'down'
+
+    def fav_src_6_pressed(self, instance: kivy.uix.widget.Widget) -> None:
+        self.client.set_source(self.config.get('denonremote', 'fav_src_6_code'))
+        instance.state = 'down'
+
+    def print_debug(self, msg: str, echo_to_logger: bool = False) -> None:
         if echo_to_logger:
             logger.debug(msg)
-        self.root.ids.debug_messages.text += "{}\n".format(msg)
+        self.root.ids.debug_messages.text += f"{msg}\n"

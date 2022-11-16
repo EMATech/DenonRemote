@@ -1,0 +1,304 @@
+#:import WIDTH denonremote.gui.WIDTH
+#:import HEIGHT denonremote.gui.HEIGHT
+#:import SMALL_HEIGHT denonremote.gui.SMALL_HEIGHT
+#:import __version__ denonremote.__about__.__version__
+#:import system platform.system
+#:import __build_date__ denonremote.__about__.__build_date__
+
+<ForcedToggleButton@ToggleButton>
+    allow_no_selection: False
+
+BoxLayout:
+    orientation: 'vertical'
+    small: False
+
+    FloatLayout:
+        id: header
+        pos_hint: {'center_x': .5, 'top': 1}
+        size_hint_x: 1
+        size_hint_y: 1 if root.small else .1
+        orientation: 'horizontal'
+        draggable: True
+
+        PowerButton:
+            id: power
+            pos_hint: {'center_x': .9, 'center_y': .5}
+            size_hint: (None, None)
+            size: (75, 60)
+            text: "⏻"
+            font_name: 'Unicode_IEC_symbol'
+            font_size: 40
+            color: [.1, .8, .1, 1] if self.state == 'down' else [.8, .1, .1, 1]  # Green when down otherwise red
+            background_color: [0, 0, 0, 1]
+            draggable: False
+            on_press: app.power_pressed(self)
+
+        Label:
+            id: name
+            pos_hint: {'center_x': .5, 'center_y': .5}
+            size_hint: (1, .8)
+            text: "DENON REMOTE"
+            font_size: 50
+            bold: True
+            color: [.75, .75, .75, 1]
+
+        Button:
+            id: denon_image
+            pos_hint: {'center_x': .1, 'center_y': .5}
+            size_hint: (None, None)
+            size: (136, 50)
+            background_normal: 'DN-500AV.png'
+            background_down: self.background_normal
+            background_disabled_normal: self.background_normal
+            background_disabled_down: self.background_normal
+            draggable: False
+            on_press: app.logo_pressed(self)
+
+    BoxLayout:
+        id: main
+        orientation: 'vertical'
+        pos_hint: {'center_x': .5, 'center_y': .5}
+        size_hint_x: 0 if root.small else 1
+        size_hint_y: 0 if root.small else .8
+        size: (0, 0) if root.small else (WIDTH, HEIGHT * .8)
+        opacity: 0 if root.small else 1
+        disabled: root.small
+        spacing: 10
+
+        BoxLayout
+            id: spl_section
+            orientation: 'horizontal'
+
+            BoxLayout
+                id: spl_mode_section_1
+                orientation: 'vertical'
+
+                ForcedToggleButton
+                    id: mode_k20
+                    text: "SMPTE/K-20"
+                    group: 'mode_ref'
+                    state: 'down'  # Default
+                    on_press: app.mode_changed(self)
+
+                ForcedToggleButton
+                    id: mode_ebu
+                    text: "EBU"
+                    group: 'mode_ref'
+                    on_press: app.mode_changed(self)
+
+            BoxLayout
+                id: spl_display_section
+                orientation: 'vertical'
+
+                TextInput:
+                    id: spl_display
+                    text: "---dB SPL"
+                    readonly: True
+                    font_name: 'RobotoMono-Bold'
+                    font_size: 32
+                    bold: True
+                    halign: 'center'
+                    multiline: False
+                    foreground_color: [.85, .85, .85, 1]
+                    background_color: [.1, .1, .1, 1]
+                    #on_text_validate: app.spl_text_changed(self)
+                    disabled: False if root.ids.power.state == 'down' else True
+
+                TextInput:
+                    id: ref_display
+                    text: "@ ---dB FS"
+                    readonly: True
+                    font_name: 'RobotoMono-Italic'
+                    font_size: 24
+                    italic: True
+                    halign: 'center'
+                    valign: 'middle'
+                    multiline: False
+                    foreground_color: [.85, .85, .85, 1]
+                    background_color: [.1, .1, .1, 1]
+                    #on_text_validate: app.ref_text_changed(self)
+
+            BoxLayout
+                id: spl_mode_section_2
+                orientation: 'vertical'
+
+                ForcedToggleButton
+                    id: mode_k14
+                    text: "K-14"
+                    group: 'mode_ref'
+                    on_press: app.mode_changed(self)
+
+                ForcedToggleButton
+                    id: mode_k12
+                    text: "K-12"
+                    group: 'mode_ref'
+                    on_press: app.mode_changed(self)
+
+        BoxLayout:
+            id: volume_section
+            orientation: 'vertical'
+            disabled: False if root.ids.power.state == 'down' else True
+
+            BoxLayout:
+                id: volume_keys_layout
+                orientation: 'horizontal'
+
+                Button
+                    id: volume_minus
+                    text: "-"
+                    on_press: app.volume_minus_pressed(self)
+
+                TextInput:
+                    id: volume_display
+                    text: "---.-dB"  # TODO: decorrelate display from serial commands (SI mandates a space before the unit)
+                    font_name: 'RobotoMono-Regular'
+                    font_size: 32
+                    halign: 'center'
+                    multiline: False
+                    foreground_color: [.85, .85, .85, 1]
+                    background_color: [.1, .1, .1, 1]
+                    on_text_validate: app.volume_text_changed(self)
+
+                Button:
+                    id: volume_plus
+                    text: "+"
+                    on_press: app.volume_plus_pressed(self)
+
+            ToggleButton:
+                id: volume_mute
+                text: "Mute"
+                group: 'mute'
+                on_press: app.volume_mute_pressed(self)
+
+        BoxLayout
+            id: presets_section
+            orientation: 'vertical'
+            disabled: False if root.ids.power.state == 'down' else True
+            size_hint: (1, .5)
+
+            BoxLayout
+                id: volume_presets_layout
+                orientation: 'horizontal'
+
+                ToggleButton:
+                    id: vol_preset_1
+                    text: app.config.get('denonremote', 'vol_preset_1')
+                    group: 'vol_preset'
+                    on_press: app.vol_preset_1_pressed(self)
+
+                ToggleButton:
+                    id: vol_preset_2
+                    text: app.config.get('denonremote', 'vol_preset_2')
+                    group: 'vol_preset'
+                    on_press: app.vol_preset_2_pressed(self)
+
+                ToggleButton:
+                    id: vol_preset_3
+                    text: app.config.get('denonremote', 'vol_preset_3')
+                    group: 'vol_preset'
+                    on_press: app.vol_preset_3_pressed(self)
+
+                ToggleButton:
+                    id: vol_preset_4
+                    text: app.config.get('denonremote', 'vol_preset_4')
+                    group: 'vol_preset'
+                    on_press: app.vol_preset_4_pressed(self)
+
+        BoxLayout:
+            id: sources_section
+            orientation: 'horizontal'
+            size_hint: (1, 1.5)
+
+            BoxLayout:
+                id: sources_section_left
+                orientation: 'vertical'
+
+                ToggleButton:
+                    id: fav_src_1
+                    text: app.config.get('denonremote', 'fav_src_1_label')
+                    group: 'sources'
+                    on_press: app.fav_src_1_pressed(self)
+
+                ToggleButton:
+                    id: fav_src_2
+                    text: app.config.get('denonremote', 'fav_src_2_label')
+                    group: 'sources'
+                    on_press: app.fav_src_2_pressed(self)
+
+                ToggleButton:
+                    id: fav_src_3
+                    text: app.config.get('denonremote', 'fav_src_3_label')
+                    group: 'sources'
+                    on_press: app.fav_src_3_pressed(self)
+
+            BoxLayout:
+                id: sources_section_right
+                orientation: 'vertical'
+
+                ToggleButton:
+                    id: fav_src_4
+                    text: app.config.get('denonremote', 'fav_src_4_label')
+                    group: 'sources'
+                    on_press: app.fav_src_4_pressed(self)
+
+                ToggleButton:
+                    id: fav_src_5
+                    text: app.config.get('denonremote', 'fav_src_5_label')
+                    group: 'sources'
+                    on_press: app.fav_src_5_pressed(self)
+
+                ToggleButton:
+                    id: fav_src_6
+                    text: app.config.get('denonremote', 'fav_src_6_label')
+                    group: 'sources'
+                    on_press: app.fav_src_6_pressed(self)
+
+    BoxLayout:
+        id: footer
+        pos_hint: {'center_x': .5, 'bottom': 1}
+        size_hint_x: 0 if root.small else 1
+        size_hint_y: 0 if root.small else None
+        size: (0, 0) if root.small else (WIDTH, HEIGHT * .1)
+        opacity: 0 if root.small else 1
+        disabled: root.small
+
+        Button:
+            id: settings
+            pos_hint: {'left': 1, 'center_y': .5}
+            size_hint: (.333, 1)
+            text: "⚙"
+            font_name: 'FreeSerif'
+            font_size: 50
+            background_color: [0, 0, 0, 1]
+            disabled: False
+            on_press: app.open_settings(self)
+
+        BoxLayout:
+            id: brand_layout
+            orientation: 'vertical'
+            pos_hint: {'center_x': .5, 'center_y': .5}
+            size_hint: (.333, 1)
+
+            Label:
+                id: brand_label
+                text: "EMA Tech."
+
+            Label:
+                id: copyright_label
+                text: "(c) 2021-2022 Raphaël Doursenaud"
+                font_size: 12
+
+            Label:
+                id: version_label
+                text: f"v{__version__} {system()} (Built on {__build_date__})"
+                font_size: 10
+
+        CodeInput:
+            id: debug_messages
+            pos_hint: {'right': 1, 'center_y': .5}
+            size_hint: (.333, 1)
+            text: "Initializing GUI...\n"
+            readonly: True
+            background_color: [0, 0, 0, 1]
+            foreground_color: [0, 1, 0, 1]
+            border: (1, 1, 1, 1)

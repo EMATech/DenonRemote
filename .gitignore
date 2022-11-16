@@ -6,5 +6,6 @@ venv
 build
 dist
 __pycache__
-# Asset sources
-assets
+.buildozer
+# Build version
+src/denonremote/__build__.py

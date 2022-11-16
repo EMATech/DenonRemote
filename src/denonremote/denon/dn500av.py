@@ -1,9 +1,15 @@
-# -*- coding: utf-8 -*-
+# This Python file uses the following encoding: utf-8
+#
+# SPDX-FileCopyrightText: 2021-2022 Raphaël Doursenaud <rdoursenaud@free.fr>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """
 Denon DN-500AV serial and IP communication protocol description
 
 Derived from the manual (DN500AVEM_ENG-CD-ROM_v00.pdf)
 """
+
 from __future__ import annotations
 
 import logging
@@ -11,7 +17,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def srange(start, stop, step, length):
+def srange(start: int | float, stop: int | float, step: int | float, length: int) -> str:
     """Generate consecutive numbers as fixed length strings"""
     i = float(start)
     while i < stop:
@@ -99,7 +105,7 @@ MV_PARAMS = {
 }
 
 
-def compute_master_volume_label(value, zerodb_ref=MASTER_VOLUME_ZERODB_REF):
+def compute_master_volume_label(value: str, zerodb_ref: int = MASTER_VOLUME_ZERODB_REF) -> str:
     """Convert Master Volume ASCII value to dB"""
     # TODO: Handle absolute values
     label = '---.-dB'
@@ -188,7 +194,7 @@ CV_PARAMS = {
 }
 
 
-def compute_channel_volume_label(value):
+def compute_channel_volume_label(value: str) -> str:
     """Convert Channel Volume ASCII value to dB"""
     label = ''
     # OOB check
@@ -418,7 +424,7 @@ PS_BAS_PARAMS = {
 }
 
 
-def compute_tone_volume_label(value):
+def compute_tone_volume_label(value: str) -> str:
     """Convert Tone ASCII value to dB"""
     # OOB Check
     label = ''
@@ -465,7 +471,7 @@ PS_LFE_PARAMS = {
 }
 
 
-def compute_lfe_volume_label(value):
+def compute_lfe_volume_label(value: str) -> str:
     """Convert LFE ASCII value to dB"""
     if int(value) < LFE_MIN or int(value) > LFE_MAX:
         logger.error(f"LFE value {value} out of bounds ({LFE_MIN}-{LFE_MAX})")
@@ -498,7 +504,7 @@ PS_EFF_PARAMS = {
 }
 
 
-def compute_eff_volume_label(value):
+def compute_eff_volume_label(value: str) -> str:
     """Convert EFF ASCII value to dB"""
     if int(value) < EFF_MIN or int(value) > EFF_MAX:
         logger.error(f"EFF value {value} out of bounds ({EFF_MIN}-{EFF_MAX})")
@@ -892,7 +898,7 @@ class DN500AVMessage:
     parameter_label: None | str = None
     response: None | str = None
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     def parse_response(self, status_command: str | bytes, unicode: bool = False) -> None:
@@ -904,11 +910,12 @@ class DN500AVMessage:
         :return: Parsed string
         """
         # Handle strings and bytes
-        if type(status_command) is bytes:
-            status_command = status_command.decode('ASCII')
+        if isinstance(status_command, bytes):
             if unicode:
                 # Parts can be UTF-8 encoded when using the NSE command
                 status_command = status_command.decode('UTF-8')
+            else:
+                status_command = status_command.decode('ASCII')
 
         logger.debug(f"Received status command: {status_command}")
 
@@ -922,8 +929,8 @@ class DN500AVMessage:
         if self.command_label is None:
             logger.error(f"Command unknown: {status_command}")
             return
-        else:
-            logger.info(f"Parsed command {self.command_code}: {self.command_label}")
+
+        logger.info(f"Parsed command {self.command_code}: {self.command_label}")
 
         # Trim command from status command stream
         status_command = status_command[len(self.command_code):]
@@ -976,12 +983,10 @@ class DN500AVMessage:
 
 
 class DN500AVFormat:
-    mv_reverse_params = {}
+    def __init__(self) -> None:
+        self.mv_reverse_params: dict[str:str] = {value: key for key, value in MV_PARAMS.items()}
 
-    def __init__(self):
-        self.mv_reverse_params = dict([(value, key) for key, value in MV_PARAMS.items()])
-
-    def get_raw_volume_value_from_db_value(self, value):
+    def get_raw_volume_value_from_db_value(self, value: str) -> str:
         logger.debug(f"value: {value}")
         raw_value = self.mv_reverse_params['value']
         logger.debug(f"rawvalue: {raw_value}")

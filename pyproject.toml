@@ -1,0 +1,125 @@
+# This Python file uses the following encoding: utf-8
+#
+# SPDX-FileCopyrightText: 2022 Raphaël Doursenaud <rdoursenaud@free.fr>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# https://packaging.python.org
+
+[build-system]
+requires = ['hatchling']
+build-backend = 'hatchling.build'
+
+[project]  # https://packaging.python.org/en/latest/specifications/declaring-project-metadata
+name = "denonremote"  # https://peps.python.org/pep-0503/
+description = "A desktop GUI remote for the Denon DN-500 AV receiver."
+readme = 'README.md'
+requires-python = '>=3.10'
+# https://peps.python.org/pep-0508
+# https://peps.python.org/pep-0440/#version-specifiers
+dependencies = [
+    'kivy==2.1.0', # Remember to also update kivy.require() in gui.py
+    'kivy-deps.sdl2',
+    'kivy-deps.glew', # OpenGL (Windows only)
+    'pystray==0.19.4',
+    'twisted==22.4.0',
+    'KivyOnTop',
+    'Pillow~=9.1.0',
+]
+license = { file = 'LICENSE' }
+authors = [
+    { name = "Raphaël Doursenaud", email = 'rdoursenaud@free.fr' }
+]
+keywords = [
+    "Remote control",
+    "Denon",
+    "DN-500AV",
+]
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+    'Environment :: Win32 (MS Windows)',
+    'Environment :: MacOS X',
+    'Environment :: X11 Applications',
+    'Framework :: Twisted',
+    'Intended Audience :: End Users/Desktop',
+    'Natural Language :: English',
+    # 'Operating System :: Microsoft :: Windows :: Windows 8.1',  # TODO: test
+    'Operating System :: Microsoft :: Windows :: Windows 10',
+    'Operating System :: Microsoft :: Windows :: Windows 11',
+    'Operating System :: MacOS :: MacOS X',
+    'Operating System :: POSIX :: Linux',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3 :: Only',
+    'Programming Language :: Python :: 3.10',
+    # 'Topic :: Documentation :: Sphinx',  # TODO
+    'Topic :: Home Automation',
+    # 'Topic :: Internet',  # TODO: implement RTP-MIDI support
+    'Topic :: Multimedia :: Sound/Audio',
+    'Topic :: Scientific/Engineering :: Human Machine Interfaces',
+    'Topic :: Utilities',
+    'Typing :: Typed',
+]  # https://pypi.org/classifiers/
+dynamic = ['version']
+
+[project.urls]
+Homepage = 'https://github.com/ematech/denonremote'
+Issues = 'https://github.com/ematech/denonremote/issues'
+
+[project.gui-scripts]
+denonremote = "denonremote.__main__:main"
+
+[tool.hatch.version]
+path = 'src/denonremote/__about__.py'
+
+[tool.hatch.envs.default]
+dependencies = [
+    'pylint',
+    'darglint',
+    'pytest',
+    'pytest-cov',
+    'PyInstaller', # TODO: replace with nuitka?
+    #'buildozer',
+]
+[tool.hatch.envs.default.scripts]
+srclint = 'pylint src/'
+doclint = 'darglint -s sphinx src/'
+lint = 'pylint && doclint'
+cov = 'pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=hatch_demo --cov=tests'
+no-cov = 'cov --no-cov'
+pyinstaller = 'PyInstaller src\denonremote.spec --upx-dir=c:\upx-3.96-win64'
+
+[[tool.hatch.envs.test.matrix]]
+python = ['310']
+
+[tool.hatch.envs.docs]
+dependencies = [
+    "sphinx"
+]
+
+[tool.coverage.run]
+branch = true
+parallel = true
+omit = [
+    'src/denonremote/__about__.py',
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    'no cov',
+    'if __name__ == .__main__.:',
+    'if TYPE_CHECKING:',
+]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    '/.gitignore',
+    '/.buildozer',
+    '/build',
+    '/data',
+    '/dist',
+    '/docs',
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/denonremote"]

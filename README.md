@@ -4,9 +4,9 @@ Denon Remote
 Control [Denon Professional DN-500AV surround preamplifier](https://www.denonpro.com/index.php/products/view/dn-500av)
 remotely.
 
-![Screenshot](screenshot-v0.7.0-main.png)
+![Screenshot](data/screenshots/screenshot-v0.9.0-main.png)
 
-![Settings Screenshot](screenshot-v0.7.0-settings.png)
+![Settings Screenshot](data/screenshots/screenshot-v0.9.0-settings.png)
 
 Author: Raphael Doursenaud <rdoursenaud+denonremote@gmail.com>
 
@@ -26,7 +26,7 @@ Fonts used:
 
 #### Target hardware
 
-- [x] Denon Professional DN-500AV (Seems based on the same platform as the Denon AVR-1912 and AVR-2112CI.)
+- [x] Denon Professional DN-500AV (Seems to be based on the same platform as the Denon AVR-1912 and AVR-2112CI)
 - [ ] More? Contributions welcome!
 
 
@@ -124,7 +124,7 @@ Fonts used:
     - [x] [UPX](https://upx.github.io/) support
     - How to build:
         - Review [denonremote.spec](denonremote.spec)
-        - Use `python -m PyInstaller denonremote.spec --upx-dir=c:\upx-3.96-win64`
+        - Use `python -m PyInstaller --clean --upx-dir=c:\upx-3.96-win64 denonremote.spec`
 - [ ] [cx-Freeze](https://pypi.org/project/cx-Freeze/) for multiplatform support?
 - [ ] VST plugin? (Not required if MIDI input is implemented but would be neat to have in the monitoring section of a
   DAW)

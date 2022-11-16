@@ -1,7 +1,0 @@
-twisted==22.4.0
-kivy==2.1.0  # Remember to also update kivy.require() in gui.py
-pystray==0.19.3
-Pillow~=9.1.0
-PyInstaller
-buildozer
-KivyOnTop

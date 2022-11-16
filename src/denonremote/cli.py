@@ -1,7 +1,17 @@
+# This Python file uses the following encoding: utf-8
+#
+# SPDX-FileCopyrightText: 2021-2022 Raphaël Doursenaud <rdoursenaud@free.fr>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+"""
+Denon Remote Command Line Interface mode.
+"""
+
 import kivy.config
 from twisted.internet import reactor
 
-from denon.communication import DenonClientFactory
+from denonremote.denon.communication import DenonClientFactory
 
 
 class DenonRemoteApp:
