@@ -1,34 +1,24 @@
-Denon Remote
-============
+[![Denon Remote Logo](https://raw.githubusercontent.com/EMATech/denonremote/main/data/assets/icon_24.png) Denon Remote](https://github.com/ematech/denonremote)
+===================================================================================================
+
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/denonremote.svg)](https://pypi.org/project/denonremote)
+[![Downloads](https://pepy.tech/badge/denonremote)](https://pepy.tech/project/denonremote)
+[![PyPI - Version](https://img.shields.io/pypi/v/denonremote.svg)](https://pypi.org/project/denonremote)
 
 Control [Denon Professional DN-500AV surround preamplifier](https://www.denonpro.com/index.php/products/view/dn-500av)
 remotely.
 
-![Screenshot](data/screenshots/screenshot-v0.9.0-main.png)
+![Screenshot](https://raw.githubusercontent.com/EMATech/denonremote/main/data/screenshots/screenshot-v0.9.0-main.png)
 
-![Settings Screenshot](data/screenshots/screenshot-v0.9.0-settings.png)
-
-Author: Raphael Doursenaud <rdoursenaud+denonremote@gmail.com>
-
-License: [GPLv3+](LICENSE)
-
-Language: [Python](https://python.org) 3
-
-Fonts used:
-
-- [Unicode Power Symbol](https://unicodepowersymbol.com/) Copyright (c) 2013 Joe Loughry licensed under MIT
-- [Free Serif](https://savannah.gnu.org/projects/freefont/) licensed under GPLv3
-- [Roboto](https://fonts.google.com/specimen/Roboto) Copyright Christian Robertson licensed under Apache 2.0
-
+![Settings Screenshot](https://raw.githubusercontent.com/EMATech/denonremote/main/data/screenshots/screenshot-v0.9.0-settings.png)
 
 ### Features
-
 
 #### Target hardware
 
 - [x] Denon Professional DN-500AV (Seems to be based on the same platform as the Denon AVR-1912 and AVR-2112CI)
 - [ ] More? Contributions welcome!
-
 
 #### Communication
 
@@ -152,7 +142,8 @@ Open ports:
   Most of the useful code is commented!  
   CSS loading at "css/mainMenu.css" times out.  
   Main control is available at "MainZone/index.html"!
-- 443/tcp (HTTPS): ERR_SSL_PROTOCOL_ERROR in Google Chrome  
+- 443/tcp (HTTPS):  
+  ERR_SSL_PROTOCOL_ERROR in Google Chrome  
   SSL_ERROR_EXTRACT_PUBLIC_KEY_FAILURE in Mozilla Firefox
 - 1026/tcp (RTSP): Apple AirTunes rtspd 103.2
 - 6666/tcp: ?
@@ -185,3 +176,73 @@ Python:
 - https://github.com/jphutchins/pyavreceiver (Nice library)
 - https://github.com/frawau/aiomadeavr (Library)
 - https://github.com/scarface-4711/denonavr (Uses the HTTP/XML interface. Library)
+
+Legal notice
+------------
+
+### License
+
+![GPLv3](https://raw.githubusercontent.com/EMATech/denonremote/main/data/assets/sources/gplv3-or-later.svg)
+
+Author: ©2021-2022 Raphaël Doursenaud.
+
+This software is released under the terms of the GNU General Public License, version 3.0 or later (GPL-3.0-or-later).
+
+See [LICENSE](LICENSE).
+
+Logo and icons released under the
+[Creative Commons Attribution-Share Alike 4.0 International](https://creativecommons.org/licenses/by-sa/4.0/).
+
+### Dependencies & License Acknowledgment
+
+- [Python](https://python.org) v3.10  
+  Copyright © 2001-2022 Python Software Foundation.  
+  Used under the terms of the PSF License Agreement.
+- [Kivy](https://kivy.org/)  
+  Copyright 2010-2022, The Kivy Authors.  
+  Used under the terms of the MIT license.  
+  Uses:
+    - [docutils](https://docutils.sourceforge.io/COPYING.html)
+    - [pygments](https://github.com/pygments/pygments/blob/master/LICENSE)
+    - [sdl2](https://www.libsdl.org/license.php)
+    - [glew](https://glew.sourceforge.net/glew.txt)
+    - [pywin32](https://pypi.org/project/pywin32/)
+    - [zlib](https://github.com/madler/zlib/blob/master/README)
+- [Twisted](https://twisted.org/)  
+  Copyright (c) 2001-2022 Twisted Matrix Laboratories.  
+  Used under the terms of the MIT license.
+- [PyInstaller](https://pyinstaller.org)  
+  Copyright (c) 2010-2022, PyInstaller Development Team.  
+  Copyright (c) 2005-2009, Giovanni Bajo.  
+  Based on previous work under copyright (c) 2002 McMillan Enterprises, Inc.  
+  Used under the terms of the GNU General Public License version 2.0.
+    - includes [cpython](https://hg.python.org/cpython/file/tip/Tools/msi/exe/crtlicense.txt)
+
+#### Fonts
+
+- [Free Serif](https://www.gnu.org/software/freefont/)  
+  Copyright © 2022 Free Software Foundation, Inc.  
+  Used under the terms of the GNU General Public License version 3.0.
+- [Roboto Mono](https://github.com/googlefonts/RobotoMono)  
+  Copyright (c) 2015 The Roboto Mono Project Authors.  
+  Used under the terms of the Apache License, Version 2.0.
+- [Unicode Power Symbol](https://unicodepowersymbol.com/)  
+  Copyright (c) 2013 Joe Loughry.  
+  Used under the terms of the MIT license.
+
+#### Logo and icons
+
+Own work based upon:
+
+- [Denon Professional DN-500AV Front](https://www.denonpro.com/index.php/products/view/dn-500av#tab-images)  
+  Marketing material from Denon Professional.  
+  Copyright 2012-2022 inMusic Brands, Inc.
+
+### Trademarks
+
+- [Denon](https://www.denon.com) is a trademark of Sound United, LLC and Affiliates.
+- [Denon Professional](https://www.denonpro.com) is a trademark of inMusic Brands, Inc.
+
+#### Other
+
+Other trademarks are property of their respective owners and used fairly for descriptive and nominative purposes only.

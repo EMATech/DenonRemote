@@ -19,12 +19,12 @@ requires-python = '>=3.10'
 # https://peps.python.org/pep-0440/#version-specifiers
 dependencies = [
     'kivy==2.1.0', # Remember to also update kivy.require() in gui.py
-    'kivy-deps.sdl2',
-    'kivy-deps.glew', # OpenGL (Windows only)
+    'kivy-deps.sdl2==0.5.1',
+    'kivy-deps.glew==0.3.1', # OpenGL (Windows only)
     'pystray==0.19.4',
     'twisted==22.4.0',
-    'KivyOnTop',
-    'Pillow~=9.1.0',
+    'KivyOnTop==1.4',
+    'Pillow~=9.3.0',
 ]
 license = { file = 'LICENSE' }
 authors = [
@@ -87,7 +87,7 @@ doclint = 'darglint -s sphinx src/'
 lint = 'pylint && doclint'
 cov = 'pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=hatch_demo --cov=tests'
 no-cov = 'cov --no-cov'
-pyinstaller = 'PyInstaller src\denonremote.spec --upx-dir=c:\upx-3.96-win64'
+pyinstaller = 'PyInstaller --clean --upx-dir=c:\upx-3.96-win64 denonremote.spec'
 
 [[tool.hatch.envs.test.matrix]]
 python = ['310']
