@@ -102,7 +102,7 @@ remotely.
 - [x] Systray/Taskbar support using [pystray](https://pypi.org/project/pystray/)
 - [x] Only one instance is allowed (Microsoft Windows only)
 - [X] Option to make window stay always on top (Microsoft Windows only)
-- [x] Touch doesn’t activate the window and doesn’t steal focus (Microsoft Windows only)
+- [x] Touch doesn't activate the window and doesn't steal focus (Microsoft Windows only)
 - [x] Trigger events without having to activate the window first (Microsoft Windows only)
 - [ ] Draw it on the first touch enabled display if available instead of the main one
 
@@ -114,7 +114,10 @@ remotely.
     - [x] [UPX](https://upx.github.io/) support
     - How to build:
         - Review [denonremote.spec](denonremote.spec)
-        - Use `python -m PyInstaller --clean --upx-dir=c:\upx-3.96-win64 denonremote.spec`
+        - Use `hatch run build:pyinstaller`
+- [x] [Nuitka](https://nuitka.net) (Alpha support for Microsoft Windows)
+    - Use `hatch run build:nuitka`
+- [ ] [PyOxidiser](https://github.com/indygreg/PyOxidizer)
 - [ ] [cx-Freeze](https://pypi.org/project/cx-Freeze/) for multiplatform support?
 - [ ] VST plugin? (Not required if MIDI input is implemented but would be neat to have in the monitoring section of a
   DAW)

@@ -1,6 +1,6 @@
 # This Python file uses the following encoding: utf-8
 #
-# SPDX-FileCopyrightText: 2022 Raphaël Doursenaud <rdoursenaud@free.fr>
+# SPDX-FileCopyrightText: 2023 Raphaël Doursenaud <rdoursenaud@free.fr>
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -14,17 +14,15 @@ build-backend = 'hatchling.build'
 name = "denonremote"  # https://peps.python.org/pep-0503/
 description = "A desktop GUI remote for the Denon DN-500 AV receiver."
 readme = 'README.md'
-requires-python = '>=3.10'
+requires-python = '~=3.10'
 # https://peps.python.org/pep-0508
 # https://peps.python.org/pep-0440/#version-specifiers
 dependencies = [
-    'kivy==2.1.0', # Remember to also update kivy.require() in gui.py
-    'kivy-deps.sdl2==0.5.1',
-    'kivy-deps.glew==0.3.1', # OpenGL (Windows only)
+    'kivy[sdl2]==2.2.1', # Remember to also update kivy.require() in gui.py
     'pystray==0.19.4',
-    'twisted==22.4.0',
+    'twisted==22.10.0',
     'KivyOnTop==1.4',
-    'Pillow~=9.3.0',
+    'Pillow~=9.5.0',
 ]
 license = { file = 'LICENSE' }
 authors = [
@@ -52,6 +50,7 @@ classifiers = [
     'Programming Language :: Python :: 3',
     'Programming Language :: Python :: 3 :: Only',
     'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
     # 'Topic :: Documentation :: Sphinx',  # TODO
     'Topic :: Home Automation',
     # 'Topic :: Internet',  # TODO: implement RTP-MIDI support
@@ -60,7 +59,9 @@ classifiers = [
     'Topic :: Utilities',
     'Typing :: Typed',
 ]  # https://pypi.org/classifiers/
-dynamic = ['version']
+dynamic = [
+    'version',
+]
 
 [project.urls]
 Homepage = 'https://github.com/ematech/denonremote'
@@ -73,29 +74,45 @@ denonremote = "denonremote.__main__:main"
 path = 'src/denonremote/__about__.py'
 
 [tool.hatch.envs.default]
-dependencies = [
-    'pylint',
-    'darglint',
-    'pytest',
-    'pytest-cov',
-    'PyInstaller', # TODO: replace with nuitka?
-    #'buildozer',
-]
-[tool.hatch.envs.default.scripts]
-srclint = 'pylint src/'
-doclint = 'darglint -s sphinx src/'
-lint = 'pylint && doclint'
-cov = 'pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=hatch_demo --cov=tests'
-no-cov = 'cov --no-cov'
-pyinstaller = 'PyInstaller --clean --upx-dir=c:\upx-3.96-win64 denonremote.spec'
+python = '3.11'
 
 [[tool.hatch.envs.test.matrix]]
-python = ['310']
+python = [
+    '3.10',
+    '3.11',
+]
+
+[tool.hatch.envs.test]
+dependencies = [
+    'pylint',
+    'darglint2',
+    'pytest',
+    'pytest-cov',
+]
+
+[tool.hatch.envs.test.scripts]
+srclint = 'pylint src/'
+doclint = 'darglint2 -s sphinx src/'
+lint = 'srclint && doclint'
+cov = 'pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=hatch_demo --cov=tests'
+no-cov = 'cov --no-cov'
 
 [tool.hatch.envs.docs]
 dependencies = [
-    "sphinx"
+    'sphinx',
 ]
+
+[tool.hatch.envs.build]
+dependencies = [
+    'hatchling',
+    'PyInstaller',
+    'nuitka',
+    #'buildozer',
+]
+
+[tool.hatch.envs.build.scripts]
+pyinstaller = 'PyInstaller --clean --upx-dir=c:\upx-3.96-win64 denonremote.spec'
+nuitka = 'python -m nuitka --jobs=32 --onefile src/denonremote --include-package=denonremote --include-package-data=denonremote --include-package=kivy --include-package=pystray --include-package=twisted --include-package=KivyOnTop --include-package=pygments --disable-console --windows-icon-from-ico=icon.ico'
 
 [tool.coverage.run]
 branch = true
@@ -113,6 +130,7 @@ exclude_lines = [
 
 [tool.hatch.build.targets.sdist]
 exclude = [
+    '/.github',
     '/.gitignore',
     '/.buildozer',
     '/build',
@@ -122,4 +140,6 @@ exclude = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/denonremote"]
+packages = [
+    'src/denonremote',
+]
