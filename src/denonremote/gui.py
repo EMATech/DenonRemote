@@ -7,9 +7,11 @@
 """
 Denon Remote GUI.
 """
-
+import importlib.resources
 import os
 import sys
+
+import denonremote
 
 # Don't pass CLI arguments to Kivy.
 # Must be set before importing Kivy.
@@ -54,7 +56,9 @@ for path in ['fonts', 'images', 'settings']:
         # noinspection PyProtectedMember
         kivy.resources.resource_add_path(os.path.join(sys._MEIPASS, path))
     else:
-        kivy.resources.resource_add_path(path)
+        kivy.resources.resource_add_path(
+            importlib.resources.files(denonremote).joinpath(path)
+        )
 
 _BACKOFF = .05
 

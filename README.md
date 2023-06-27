@@ -109,8 +109,8 @@ remotely.
 ##### Windows executable
 
 - [ ] Handle shutdown to power off the device
-- [x] [PyInstaller](https://www.pyinstaller.org)
-    - [x] Generate icon with [IconMaker](https://github.com/Inedo/iconmaker)
+- [x] Generate icon with [IconMaker](https://github.com/Inedo/iconmaker)
+- [x] [PyInstaller](https://www.pyinstaller.org) (Fairly stable for Microsoft Windows)
     - [x] [UPX](https://upx.github.io/) support
     - How to build:
         - Review [denonremote.spec](denonremote.spec)

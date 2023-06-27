@@ -1,6 +1,6 @@
 # This Python file uses the following encoding: utf-8
 #
-# SPDX-FileCopyrightText: 2021-2022 Raphaël Doursenaud <rdoursenaud@free.fr>
+# SPDX-FileCopyrightText: 2021-2023 Raphaël Doursenaud <rdoursenaud@free.fr>
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -11,19 +11,31 @@ Denon DN-500AV Remote
 """
 
 import argparse
+import importlib.resources
 import logging
 import os
 import sys
 
 import PIL.Image
+import kivy.resources
 import pystray
 import win32api
 import win32event
 from winerror import ERROR_ALREADY_EXISTS
 
+import denonremote
 from denonremote.__about__ import __TITLE__
 
 logger = logging.getLogger()
+
+for path in ['fonts', 'images', 'settings']:
+    if hasattr(sys, '_MEIPASS'):
+        # noinspection PyProtectedMember
+        kivy.resources.resource_add_path(os.path.join(sys._MEIPASS, path))
+    else:
+        kivy.resources.resource_add_path(
+            importlib.resources.files(denonremote).joinpath(path)
+        )
 
 
 def configure(args: argparse.Namespace) -> None:
@@ -124,26 +136,13 @@ def systray_quit(icon: pystray.Icon, _: pystray.MenuItem) -> None:
     icon.stop()
 
 
-# FIXME: use kivy.resources.resource_find instead
-def resource_path(relative_path: str) -> os.path:
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    if hasattr(sys, '_MEIPASS'):
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        # noinspection PyProtectedMember
-        base_path = sys._MEIPASS
-    else:
-        base_path = os.getcwd()
-
-    return os.path.join(base_path, relative_path)
-
-
 def run_gui_from_systray() -> None:
     default_menu_item = pystray.MenuItem(__TITLE__, systray_clicked, default=True, visible=True)
     settings_menu_item = pystray.MenuItem('Settings', systray_settings)
     quit_menu_item = pystray.MenuItem('Quit', systray_quit)
     systray_menu = pystray.Menu(default_menu_item, settings_menu_item, quit_menu_item)
     systray = pystray.Icon(__TITLE__, menu=systray_menu)
-    systray.icon = PIL.Image.open(resource_path(r'images/icon.png'))
+    systray.icon = PIL.Image.open(kivy.resources.resource_find(r'icon.png'))
     systray.run(setup=run_gui)
 
 
