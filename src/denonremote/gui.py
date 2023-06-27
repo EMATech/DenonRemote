@@ -37,6 +37,7 @@ from kivy.support import install_twisted_reactor
 
 install_twisted_reactor()
 import twisted.internet
+import twisted.internet.error
 import twisted.internet.tcp
 import twisted.python.failure
 
@@ -119,54 +120,77 @@ class DenonRemoteApp(kivy.app.App):
 
     def build_config(self, config: configparser.ConfigParser) -> None:
         config.adddefaultsection('denonremote')
-        config.setdefaults('denonremote', {
-            'debug': False,
-            'receiver_ip': '192.168.x.y',
-            'receiver_port': TELNET_PORT,
-            'always_on_top': True,
-            'reference_level': '-20',  # SMPTE RP200:2012 & Katz metering system also equivalent to EBU 83dbSPLC@-20dBFS
-            'reference_spl': '83',
-            'reference_volume': '-18',  # The best alignment level with my current setup (Dynaudio BM5A)
-            'vol_preset_1': '-30.0dB',  # My preferred leisure level
-            'vol_preset_2': '-26.0dB',  # K-12
-            # -25.0dB  # EBU R 128
-            'vol_preset_3': '-24.0dB',  # K-14 / Dolby Home Cinema
-            'vol_preset_4': '-18.0dB',  # SMPTE/EBU/Dolby theater (Reference volume)
-            'fav_src_1_code': 'GAME',
-            'fav_src_1_label': "Computer HDMI",
-            'fav_src_2_code': 'CD',
-            'fav_src_2_label': "Pro Analog",
-            'fav_src_3_code': 'TV',
-            'fav_src_3_label': "Pro Digital",
-            'fav_src_4_code': '',
-            'fav_src_4_label': "",
-            'fav_src_5_code': '',
-            'fav_src_5_label': "",
-            'fav_src_6_code': '',
-            'fav_src_6_label': "",
-        })
+        config.setdefaults(
+            'denonremote', {
+                'debug': False,
+                'receiver_ip': '192.168.x.y',
+                'receiver_port': TELNET_PORT,
+                'always_on_top': True,
+                'reference_level': '-20',
+                # SMPTE RP200:2012 & Katz metering system also equivalent to EBU 83dbSPLC@-20dBFS
+                'reference_spl': '83',
+                'reference_volume': '-18',  # The best alignment level with my current setup (Dynaudio BM5A)
+                'vol_preset_1': '-30.0dB',  # My preferred leisure level
+                'vol_preset_2': '-26.0dB',  # K-12
+                # -25.0dB  # EBU R 128
+                'vol_preset_3': '-24.0dB',  # K-14 / Dolby Home Cinema
+                'vol_preset_4': '-18.0dB',  # SMPTE/EBU/Dolby theater (Reference volume)
+                'fav_src_1_code': 'GAME',
+                'fav_src_1_label': "Computer HDMI",
+                'fav_src_2_code': 'CD',
+                'fav_src_2_label': "Pro Analog",
+                'fav_src_3_code': 'TV',
+                'fav_src_3_label': "Pro Digital",
+                'fav_src_4_code': '',
+                'fav_src_4_label': "",
+                'fav_src_5_code': '',
+                'fav_src_5_label': "",
+                'fav_src_6_code': '',
+                'fav_src_6_label': "",
+            }
+        )
 
     def build_settings(self, settings: kivy.uix.settings.Settings) -> None:
-        settings.add_json_panel("Communication", self.config,
-                                filename=kivy.resources.resource_find('communication.json'))
-        settings.add_json_panel("Window", self.config,
-                                filename=kivy.resources.resource_find('window.json'))
-        settings.add_json_panel("Volume display", self.config,
-                                filename=kivy.resources.resource_find('volume_display.json'))
-        settings.add_json_panel("Volume presets", self.config,
-                                filename=kivy.resources.resource_find('volume.json'))
-        settings.add_json_panel("Favorite source 1", self.config,
-                                filename=kivy.resources.resource_find('source1.json'))
-        settings.add_json_panel("Favorite source 2", self.config,
-                                filename=kivy.resources.resource_find('source2.json'))
-        settings.add_json_panel("Favorite source 3", self.config,
-                                filename=kivy.resources.resource_find('source3.json'))
-        settings.add_json_panel("Favorite source 4", self.config,
-                                filename=kivy.resources.resource_find('source4.json'))
-        settings.add_json_panel("Favorite source 5", self.config,
-                                filename=kivy.resources.resource_find('source5.json'))
-        settings.add_json_panel("Favorite source 6", self.config,
-                                filename=kivy.resources.resource_find('source6.json'))
+        settings.add_json_panel(
+            "Communication", self.config,
+            filename=kivy.resources.resource_find('communication.json')
+        )
+        settings.add_json_panel(
+            "Window", self.config,
+            filename=kivy.resources.resource_find('window.json')
+        )
+        settings.add_json_panel(
+            "Volume display", self.config,
+            filename=kivy.resources.resource_find('volume_display.json')
+        )
+        settings.add_json_panel(
+            "Volume presets", self.config,
+            filename=kivy.resources.resource_find('volume.json')
+        )
+        settings.add_json_panel(
+            "Favorite source 1", self.config,
+            filename=kivy.resources.resource_find('source1.json')
+        )
+        settings.add_json_panel(
+            "Favorite source 2", self.config,
+            filename=kivy.resources.resource_find('source2.json')
+        )
+        settings.add_json_panel(
+            "Favorite source 3", self.config,
+            filename=kivy.resources.resource_find('source3.json')
+        )
+        settings.add_json_panel(
+            "Favorite source 4", self.config,
+            filename=kivy.resources.resource_find('source4.json')
+        )
+        settings.add_json_panel(
+            "Favorite source 5", self.config,
+            filename=kivy.resources.resource_find('source5.json')
+        )
+        settings.add_json_panel(
+            "Favorite source 6", self.config,
+            filename=kivy.resources.resource_find('source6.json')
+        )
 
     def get_application_config(self, _: str = '%(appdir)s/%(appname)s.ini') -> None:
         """
@@ -221,7 +245,8 @@ class DenonRemoteApp(kivy.app.App):
             host=self.config.get('denonremote', 'receiver_ip'),
             port=self.config.getint('denonremote', 'receiver_port'),
             factory=client_factory,
-            timeout=1)
+            timeout=1
+        )
 
     def _disconnect(self) -> None:
         if self.connector is not None:
@@ -237,21 +262,25 @@ class DenonRemoteApp(kivy.app.App):
         Fired by Kivy on application startup
         :return:
         """
-
-        print(self.root)
-
         # FIXME: Windows only ATM.
         if self.config.getboolean('denonremote', 'always_on_top'):
             KivyOnTop.register_topmost(kivy.core.window.Window, __TITLE__)
-            kivy.core.window.Window.bind(on_stop=
-                                         lambda *args, w=kivy.core.window.Window,
-                                                t=__TITLE__: KivyOnTop.unregister_topmost(w, t))
+            kivy.core.window.Window.bind(
+                on_stop=lambda *args, w=kivy.core.window.Window,
+                               t=__TITLE__: KivyOnTop.unregister_topmost(w, t)
+            )
 
         # Don’t steal focus
-        win32gui.SetWindowLong(KivyOnTop.find_hwnd(__TITLE__), win32con.GWL_EXSTYLE, win32con.WS_EX_NOACTIVATE)
+        win32gui.SetWindowLong(
+            KivyOnTop.find_hwnd(__TITLE__),
+            win32con.GWL_EXSTYLE,
+            win32con.WS_EX_NOACTIVATE,
+        )
 
         # Raise when mouse enters
-        kivy.core.window.Window.bind(on_cursor_enter=lambda *_: kivy.core.window.Window.raise_window())
+        kivy.core.window.Window.bind(
+            on_cursor_enter=lambda *_: kivy.core.window.Window.raise_window()
+        )
 
         # Custom titlebar
         kivy.core.window.Window.custom_titlebar = True
@@ -320,23 +349,28 @@ class DenonRemoteApp(kivy.app.App):
         self.root.ids.power.disabled = False
         self.root.ids.main.disabled = False
 
-    def on_connection_failed(self, connector: twisted.internet.tcp.Connector, reason: twisted.python.failure.Failure
-                             ) -> None:
+    def on_connection_failed(
+            self,
+            connector: twisted.internet.tcp.Connector,
+            reason: twisted.python.failure.Failure,
+    ) -> None:
         if self.connector is connector:
-            logger.debug(f"Connection failed: {reason}")
+            logger.debug(f"Connection failed: {reason.value}")
             self.print_debug("Connection to receiver failed!")
             self.client = None
-            # TODO: open error popup?
             self.root.ids.power.disabled = True
             self.root.ids.main.disabled = True
             self.open_settings()
 
         self._reconnect()
 
-    def on_connection_lost(self, connector: twisted.internet.tcp.Connector, reason: twisted.python.failure.Failure
-                           ) -> None:
+    def on_connection_lost(
+            self,
+            connector: twisted.internet.tcp.Connector,
+            reason: twisted.python.failure.Failure,
+    ) -> None:
         if self.connector is connector:
-            logger.debug(f"Connection lost: {reason}")
+            logger.debug(f"Connection lost: {reason.value}")
             self.print_debug("Connection to receiver lost!")
             self.client = None
             self.root.ids.power.disabled = True
@@ -366,7 +400,11 @@ class DenonRemoteApp(kivy.app.App):
         window.hide()
         self.hidden = True
 
-    def hide_on_close(self, window: kivy.core.window.Window, source: str = None) -> True:
+    def hide_on_close(
+            self,
+            window: kivy.core.window.Window,
+            source: str = None,
+    ) -> True:
         logger.debug(f"Hide from {source}")
         self.hide(window)
         return True  # Keeps the application alive instead of stopping
@@ -377,8 +415,15 @@ class DenonRemoteApp(kivy.app.App):
     def disable_keyboard_shortcuts(self) -> None:
         kivy.core.window.Window.unbind(on_keyboard=self.on_keyboard)
 
-    def on_keyboard(self, _: kivy.core.window.Window,
-                    key: str, scancode: int = None, codepoint: str = None, modifier: str = None, **__) -> None:
+    def on_keyboard(
+            self,
+            _: kivy.core.window.Window,
+            key: str,
+            scancode: int = None,
+            codepoint: str = None,
+            modifier: str = None,
+            **__,
+    ) -> None:
         """
         Handle keyboard shortcuts
         """
@@ -471,15 +516,20 @@ class DenonRemoteApp(kivy.app.App):
         # Relative mode computation
         volume = float('-inf') if text == '---.-dB' else float(text.replace(' ', '')[:-2])  # Strip "dB"
         volume_delta = volume - float(
-            self.config.get('denonremote', 'reference_volume'))  # compute delta with reference volume
+            self.config.get('denonremote', 'reference_volume')
+        )  # compute delta with reference volume
         if volume == float('-inf'):
             spl = volume
         else:
-            spl = int(round(
-                float(self.config.get('denonremote', 'reference_spl')) + volume_delta))  # apply delta to reference SPL
+            spl = int(
+                round(
+                    float(self.config.get('denonremote', 'reference_spl')) + volume_delta
+                )
+            )  # apply delta to reference SPL
         # Reference mode handling
         ref_delta = ref_level - int(
-            self.config.get('denonremote', 'reference_level'))  # compute delta with reference level
+            self.config.get('denonremote', 'reference_level')
+        )  # compute delta with reference level
         spl = spl + ref_delta
         if spl == float('-inf'):
             spl = 0

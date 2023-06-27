@@ -1,19 +1,23 @@
 # This Python file uses the following encoding: utf-8
 #
-# SPDX-FileCopyrightText: 2021-2022 Raphaël Doursenaud <rdoursenaud@free.fr>
+# SPDX-FileCopyrightText: 2021-2023 Raphaël Doursenaud <rdoursenaud@free.fr>
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
+from typing import TYPE_CHECKING
 
 import twisted.internet.interfaces
 import twisted.python.failure
-from twisted.internet import task, reactor
+from twisted.internet import reactor, task
 from twisted.internet.protocol import ClientFactory
 from twisted.protocols.basic import LineOnlyReceiver
 from twisted.protocols.policies import TimeoutMixin
 
-from .dn500av import DN500AVMessage, DN500AVFormat
+from .dn500av import DN500AVFormat, DN500AVMessage
+
+if TYPE_CHECKING:
+    from denonremote.gui import DenonRemoteApp
 
 logger = logging.getLogger(__name__)
 
@@ -24,23 +28,27 @@ logger = logging.getLogger(__name__)
 
 class DenonProtocol(LineOnlyReceiver, TimeoutMixin):
     # From DN-500 manual (DN-500AVEM_ENG_CD-ROM_v00.pdf) page 91 (97 in PDF form)
-    MAX_LENGTH = 135
-    DELAY = 0.04
+    MAX_LENGTH: int = 135
+    DELAY: float = .2
     """
     Delay between messages in seconds.
-    The documentation requires 200 ms. 40 ms seems safe.
+    The documentation requires 200 ms.
+    20 ms seems safe.
     """
-    TIMEOUT = .2
-    """
-    Requests shall time out if no reply is received in under 200 ms.
-    """
-    EXTENDED_TIMEOUT = 5
+    DEFAULT_TIMEOUT: float = .2
     """
     Changing sources takes way more than 200ms.
     Let's bump this case to 5 seconds to prevent spurious disconnections.
     """
-    delimiter = b'\r'
-    ongoing_calls = 0  # Delay handling.
+    delimiter: bytes
+    factory: 'DenonClientFactory'
+    ongoing_calls: int
+    timeOut: float
+    transport: twisted.internet.interfaces.ITCPTransport
+
+    def __init__(self):
+        self.delimiter = b'\r'
+        self.ongoing_calls = 0  # Delay handling.
 
     def connectionMade(self) -> None:
         logger.debug("Connection made")
@@ -53,28 +61,37 @@ class DenonProtocol(LineOnlyReceiver, TimeoutMixin):
         if self.factory.gui:
             self.factory.app.on_timeout()
 
-    def sendLine(self, line: bytes) -> task.Deferred:
-        if b'?' in line:
-            # A request is made. We need to delay the next calls
-            self.ongoing_calls += 1
-            logger.debug(f'Ongoing calls for delay: {self.ongoing_calls}')
-        delay = 0  # Send now
-        if self.ongoing_calls > 0:
-            delay = self.DELAY * (self.ongoing_calls - 1)  # Send after other messages
-        logger.debug(f"Will send line: {line} in {delay} seconds")
+    def sendLine(self, line: bytes) -> task.Deferred | None:
+        deferred = None
         line_len = len(line)
         if line_len > self.MAX_LENGTH:
             logger.warning(f'Line too long (>{self.MAX_LENGTH}): {line_len}')
-        return task.deferLater(reactor, delay=delay,
-                               callable=self.sendLineWithTimeout, line=line)
+        if b'?' not in line:
+            logger.debug(f"Sending line: {line.decode('ASCII')}")
+            super().sendLine(line)
+        else:
+            # A request is made. We need to delay the next calls
+            self.ongoing_calls += 1
+            logger.debug(f'Ongoing calls for delay: {self.ongoing_calls}')
+            delay = 0  # Send now
+            if self.ongoing_calls > 0:
+                delay = self.DELAY * (self.ongoing_calls - 1)  # Send after other messages
+            logger.debug(f"Will send line: {line} in {delay} seconds")
+            deferred = task.deferLater(
+                reactor,
+                delay=delay,
+                callable=self.sendLineWithTimeout,
+                line=line,
+            )
+        return deferred
 
     # noinspection PyPep8Naming
     def sendLineWithTimeout(self, line: bytes) -> None:
-        timeout = self.TIMEOUT
-        if b'SI' in line:
-            timeout = self.EXTENDED_TIMEOUT
+        timeout = self.DEFAULT_TIMEOUT
+        if self.timeOut:
+            timeout += self.timeOut
         self.setTimeout(timeout)
-        logger.debug(f'Send accumulated timeout: {self.timeOut}')
+        logger.debug(f"Sending line with timeout ({timeout} s): {line.decode('ASCII')}")
         super().sendLine(line)
 
     def lineReceived(self, line: bytes) -> None:
@@ -137,11 +154,11 @@ class DenonProtocol(LineOnlyReceiver, TimeoutMixin):
         self.sendLine('MV?'.encode('ASCII'))
 
     def set_volume(self, value: str) -> None:
-        rawvalue = DN500AVFormat().mv_reverse_params.get(value)
-        if rawvalue is None:
+        raw_value = DN500AVFormat().mv_reverse_params.get(value)
+        if raw_value is None:
             logger.warning(f"Set volume value {value} is invalid.")
         else:
-            message = 'MV' + rawvalue
+            message = 'MV' + raw_value
             self.sendLine(message.encode('ASCII'))
 
     def get_mute(self) -> None:
@@ -162,6 +179,7 @@ class DenonProtocol(LineOnlyReceiver, TimeoutMixin):
 
 
 class DenonClientFactory(ClientFactory):
+    gui: bool
     protocol = DenonProtocol
 
     def __init__(self) -> None:
@@ -169,6 +187,7 @@ class DenonClientFactory(ClientFactory):
 
 
 class DenonClientGUIFactory(ClientFactory):
+    app: 'DenonRemoteApp'  # TODO: Extract interface
     protocol = DenonProtocol
 
     def __init__(self, app) -> None:
@@ -178,10 +197,14 @@ class DenonClientGUIFactory(ClientFactory):
         global logger
         logger = kivy.logger.Logger
 
-    def clientConnectionFailed(self, connector: twisted.internet.interfaces.IConnector,
-                               reason: twisted.python.failure.Failure) -> None:
+    def clientConnectionFailed(
+            self, connector: twisted.internet.interfaces.IConnector,
+            reason: twisted.python.failure.Failure
+    ) -> None:
         self.app.on_connection_failed(connector, reason)
 
-    def clientConnectionLost(self, connector: twisted.internet.interfaces.IConnector,
-                             reason: twisted.python.failure.Failure) -> None:
+    def clientConnectionLost(
+            self, connector: twisted.internet.interfaces.IConnector,
+            reason: twisted.python.failure.Failure
+    ) -> None:
         self.app.on_connection_lost(connector, reason)
