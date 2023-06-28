@@ -9,7 +9,7 @@ Denon Remote project metadata.
 """
 
 __TITLE__ = "Denon Remote"
-__version__ = "0.9.0"  # https://peps.python.org/pep-0440/
+__version__ = "0.10.0"  # https://peps.python.org/pep-0440/
 try:
     from denonremote.__build__ import __build_date__
 except ImportError:
