@@ -114,9 +114,9 @@ remotely.
     - [x] [UPX](https://upx.github.io/) support
     - How to build:
         - Review [denonremote.spec](denonremote.spec)
-        - Use `hatch run build:pyinstaller`
+        - Use `hatch build; hatch run build:pyinstaller`
 - [x] [Nuitka](https://nuitka.net) (Alpha support for Microsoft Windows)
-    - Use `hatch run build:nuitka`
+    - Use `hatch build; hatch run build:nuitka`
 - [ ] [PyOxidiser](https://github.com/indygreg/PyOxidizer)
 - [ ] [cx-Freeze](https://pypi.org/project/cx-Freeze/) for multiplatform support?
 - [ ] VST plugin? (Not required if MIDI input is implemented but would be neat to have in the monitoring section of a

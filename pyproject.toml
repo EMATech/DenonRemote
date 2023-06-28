@@ -75,6 +75,9 @@ path = 'src/denonremote/__about__.py'
 
 [tool.hatch.envs.default]
 python = '3.11'
+dependencies = [
+    'hatchling', # Required for the custom hook
+]
 
 [[tool.hatch.envs.test.matrix]]
 python = [
@@ -127,6 +130,8 @@ exclude_lines = [
     'if __name__ == .__main__.:',
     'if TYPE_CHECKING:',
 ]
+
+[tool.hatch.build.hooks.custom]
 
 [tool.hatch.build.targets.sdist]
 exclude = [
