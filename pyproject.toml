@@ -22,7 +22,7 @@ dependencies = [
     'pystray==0.19.4',
     'twisted==22.10.0',
     'KivyOnTop==1.4',
-    'Pillow~=9.5.0',
+    'Pillow>=9.5,<10.2',
 ]
 license = { file = 'LICENSE' }
 authors = [
