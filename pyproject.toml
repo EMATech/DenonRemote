@@ -19,7 +19,7 @@ requires-python = '~=3.10'
 # https://peps.python.org/pep-0440/#version-specifiers
 dependencies = [
     'kivy[sdl2]==2.2.1', # Remember to also update kivy.require() in gui.py
-    'pystray==0.19.4',
+    'pystray==0.19.5',
     'twisted==22.10.0',
     'KivyOnTop==1.4',
     'Pillow>=9.5,<10.2',
