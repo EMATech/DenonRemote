@@ -42,12 +42,12 @@ import twisted.internet.tcp
 import twisted.python.failure
 
 from denonremote.__about__ import __TITLE__
-from denonremote.denon.communication import DenonClientGUIFactory
+from denonremote.denon.communication import DenonClientGUIFactory, DenonProtocol
 from kivy.animation import Animation
 from kivy.uix.togglebutton import ToggleButton
 from telnetlib import TELNET_PORT
 
-kivy.require('2.1.0')
+kivy.require('2.3.0')
 
 logger = kivy.logger.Logger
 
@@ -110,7 +110,7 @@ class DenonRemoteApp(kivy.app.App):
     client: None | DenonClientGUIFactory = None
     """Twisted client of the receiver"""
 
-    systray: None | pystray.Icon = None
+    systray: pystray.Icon | None = None
 
     hidden: bool = bool(kivy.config.Config.get('graphics', 'window_state') == 'hidden')
 
@@ -336,7 +336,7 @@ class DenonRemoteApp(kivy.app.App):
         :return:
         """
         self.print_debug("Connection successful!", True)
-        self.client = connection
+        self.client: DenonProtocol | DenonClientGUIFactory = connection
         self._backoff = _BACKOFF
 
         self.client.get_power()

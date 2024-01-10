@@ -18,11 +18,11 @@ requires-python = '~=3.10'
 # https://peps.python.org/pep-0508
 # https://peps.python.org/pep-0440/#version-specifiers
 dependencies = [
-    'kivy[sdl2]==2.2.1', # Remember to also update kivy.require() in gui.py
+    'kivy[sdl2]==2.3.0', # Remember to also update kivy.require() in gui.py
     'pystray==0.19.5',
     'twisted==23.10.0',
     'KivyOnTop==1.4',
-    'Pillow>=9.5,<10.2',
+    'pillow==10.2',
 ]
 license = { file = 'LICENSE' }
 authors = [
@@ -74,7 +74,7 @@ denonremote = "denonremote.__main__:main"
 path = 'src/denonremote/__about__.py'
 
 [tool.hatch.envs.default]
-python = '3.11'
+python = '3.12'
 dependencies = [
     'hatchling', # Required for the custom hook
 ]
@@ -83,6 +83,7 @@ dependencies = [
 python = [
     '3.10',
     '3.11',
+    '3.12',
 ]
 
 [tool.hatch.envs.test]
@@ -108,7 +109,7 @@ dependencies = [
 [tool.hatch.envs.build]
 dependencies = [
     'hatchling',
-    'PyInstaller',
+    'pyinstaller',
     'Nuitka',
     #'buildozer',
 ]
