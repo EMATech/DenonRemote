@@ -51,6 +51,7 @@ classifiers = [
     'Programming Language :: Python :: 3 :: Only',
     'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
     # 'Topic :: Documentation :: Sphinx',  # TODO
     'Topic :: Home Automation',
     # 'Topic :: Internet',  # TODO: implement RTP-MIDI support
